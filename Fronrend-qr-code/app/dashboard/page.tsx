@@ -250,12 +250,12 @@ export default function RestaurantDashboard() {
       <div className="min-h-screen flex items-center justify-center bg-[#eee]">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <Image 
+            <Image 
             src="/logo.png"
-            alt="Application logo"
-            className="h-[150px] w-[150px] object-center block mx-auto mb-6 group-hover:scale-105 transition-transform duration-500"
-            width={500} 
-            height={300} 
+              alt="Application logo"
+              className="h-[150px] w-[150px] object-center block mx-auto mb-6 group-hover:scale-105 transition-transform duration-500"
+              width={500} 
+              height={300} 
           />
         </div>
       </div>
@@ -415,19 +415,19 @@ export default function RestaurantDashboard() {
                       >
                         <FaEdit className="text-xl" />
                       </Link>
-                      <button
+                          <button
                         onClick={() => deleteMeal(meal._id)}
                         className="text-red-600 hover:text-red-800"
                       >
                         <FaTrash className="text-xl" />
-                      </button>
+                          </button>
                     </div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+            </div>
       </div>
     </div>
   );

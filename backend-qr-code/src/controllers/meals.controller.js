@@ -154,27 +154,47 @@ export const addReview = async (req, res, next) => {
   try {
     const { rating, comment } = req.body;
 
-    const meal = await Meal.findOne({
-      _id: req.params.id,
-      restaurant: req.restaurant.id
-    });
-
+    // نجيب الوجبة حسب ID فقط
+    const meal = await Meal.findById(req.params.id);
     if (!meal) {
       return res.status(404).json({ message: 'Meal not found' });
     }
 
+    // تحديد معلومات المستخدم
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized: User not found' });
+    }
+
+    // منع صاحب المطعم من تقييم أكل نفسه
+    if (req.restaurant && meal.restaurant.toString() === req.restaurant._id.toString()) {
+      return res.status(403).json({ message: 'You cannot review your own meal' });
+    }
+
+    // بناء الريفيو
     const review = {
-      user: req.user.id,
-      name: req.user.username,
+      user: req.user._id,
+      name: req.user.username || req.user.name,
       rating: parseInt(rating, 10),
       comment,
+      createdAt: new Date()
     };
 
+    // دفع الريفيو داخل meal
     meal.reviews.push(review);
-    meal.rating = meal.reviews.reduce((acc, item) => item.rating + acc, 0) / meal.reviews.length;
 
+    // حساب المتوسط الجديد
+    meal.rating =
+      meal.reviews.reduce((acc, item) => item.rating + acc, 0) /
+      meal.reviews.length;
+
+    // حفظ الوجبة
     await meal.save();
-    res.status(201).json({ message: 'Review added successfully' });
+
+    res.status(201).json({
+      message: 'Review added successfully',
+      review
+    });
+
   } catch (error) {
     console.error('Error in addReview:', error);
     next(error);
@@ -184,11 +204,9 @@ export const addReview = async (req, res, next) => {
 export const updateReview = async (req, res, next) => {
   try {
     const { rating, comment } = req.body;
-    const meal = await Meal.findOne({
-      _id: req.params.mealId,
-      restaurant: req.restaurant.id
-    });
-
+    
+    // تغيير طريقة البحث عن الوجبة
+    const meal = await Meal.findById(req.params.mealId);
     if (!meal) {
       return res.status(404).json({ message: 'Meal not found' });
     }
@@ -198,13 +216,16 @@ export const updateReview = async (req, res, next) => {
       return res.status(404).json({ message: 'Review not found' });
     }
 
-    if (req.user.role !== 'admin' && req.user.id !== review.user.toString()) {
+    // التحقق من أن المطعم هو صاحب الوجبة
+    if (meal.restaurant.toString() !== req.restaurant._id.toString()) {
       return res.status(403).json({ message: 'You are not authorized to edit this review' });
     }
 
+    // تعديل التقييم
     review.rating = parseInt(rating, 10) || review.rating;
     review.comment = comment || review.comment;
 
+    // تحديث متوسط التقييم
     meal.rating = meal.reviews.reduce((acc, item) => item.rating + acc, 0) / meal.reviews.length;
 
     await meal.save();
@@ -233,11 +254,16 @@ export const deleteReview = async (req, res, next) => {
 
     const review = meal.reviews[reviewIndex];
 
-    if (req.user.role !== 'admin' && req.user.id !== review.user.toString()) {
+    // السماح للمطعم أو صاحب التقييم بالحذف
+    if (req.restaurant && meal.restaurant.toString() === req.restaurant.id) {
+      // المطعم يمكنه حذف التقييم
+      meal.reviews.splice(reviewIndex, 1);
+    } else if (req.user && req.user.id === review.user.toString()) {
+      // صاحب التقييم يمكنه حذف تقييمه
+      meal.reviews.splice(reviewIndex, 1);
+    } else {
       return res.status(403).json({ message: 'You are not authorized to delete this review' });
     }
-
-    meal.reviews.splice(reviewIndex, 1);
 
     meal.rating = meal.reviews.length
       ? meal.reviews.reduce((acc, item) => item.rating + acc, 0) / meal.reviews.length

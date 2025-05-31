@@ -60,28 +60,52 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
+  
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-
+  
       const data = await res.json();
-
-      if (!res.ok) throw new Error(data.message || (language === 'ar' ? "فشل تسجيل الدخول" : "Login failed"));
-
+  
+      if (!res.ok) {
+        throw new Error(
+          data.message || (language === 'ar' ? "فشل تسجيل الدخول" : "Login failed")
+        );
+      }
+  
       const { token, user } = data;
+  
+      console.log('Login response:', { token, user });
+  
+      // تخزين التوكن
+      localStorage.setItem('token', token);
+  
+      // تخزين المستخدم العادي أو المطعم
+      if ('subdomain' in user) {
+        localStorage.setItem('restaurant', JSON.stringify(user));
+      } else {
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+  
+      // استدعاء دالة login لتحديث الكونتكست
       login(user, token);
+  
       router.push("/");
     } catch (error: unknown) {
-      setError((error as Error).message || (language === 'ar' ? "حدث خطأ ما" : "Something went wrong"));
+      console.error('Login error:', error);
+      setError(
+        (error as Error).message || (language === 'ar' ? "حدث خطأ ما" : "Something went wrong")
+      );
     } finally {
       setLoading(false);
     }
   };
-
+  
+  
+  
   return (
     <div className="min-h-screen bg-[#eee] flex items-center justify-center px-4">
       <AnimatedBackground />

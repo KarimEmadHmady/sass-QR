@@ -35,6 +35,9 @@ router.get('/restaurant/:subdomain', async (req, res) => {
   }
 });
 
+
+
+
 // Protected routes (auth required)
 router.get('/', authenticateRestaurantToken, getMeals);
 router.get('/:id', authenticateRestaurantToken, getMealById);
@@ -44,7 +47,7 @@ router.delete('/:id', authenticate, deleteMeal);
 
 // Review routes
 router.post('/:id/reviews', authenticate, addReview);
-router.put('/:mealId/reviews/:reviewId', authenticate, updateReview);
+router.put('/:mealId/reviews/:reviewId', authenticateRestaurantToken, updateReview);
 router.delete('/:mealId/reviews/:reviewId', authenticate, deleteReview);
 
 export default router;

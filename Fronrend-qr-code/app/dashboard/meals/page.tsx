@@ -129,7 +129,7 @@ const MealsPage = () => {
             Authorization: `Bearer ${token}`,
           },
         });
-
+        
         setCategories(categoriesResponse.data);
         setLoading(false);
         setError(null);

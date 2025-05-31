@@ -223,7 +223,6 @@ const HomePage: React.FC = () => {
     );
   };
 
-  // Add submitReview function
   const submitReview = async () => {
     if (!isAuthenticated || !user || !selectedMeal) return;
     
@@ -231,27 +230,48 @@ const HomePage: React.FC = () => {
       setIsSubmitting(true);
       const token = localStorage.getItem("token");
       
+      // تحويل التقييم إلى رقم
+      const ratingNumber = Number(rating);
+      
+      // التحقق من صحة التقييم
+      if (isNaN(ratingNumber) || ratingNumber < 1 || ratingNumber > 5) {
+        toast.error(language === 'ar' ? "يرجى اختيار تقييم صحيح من 1 إلى 5" : "Please select a valid rating from 1 to 5");
+        return;
+      }
+
+      // طباعة البيانات للتحقق
+      console.log('Token:', token);
+      console.log('User:', user);
+      console.log('Selected Meal:', selectedMeal);
+      console.log('Rating:', ratingNumber);
+      console.log('Comment:', comment);
+
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/meals/${selectedMeal._id}/reviews`,
         {
-          rating,
+          rating: ratingNumber,
           comment,
-          userId: user.id,
+          user: user.id,
           name: user.username
         },
         {
           headers: {
-            Authorization: `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
         }
       );
 
+      console.log('Response:', response.data);
+
       // Create the new review object
       const newReview = {
-        _id: response.data._id,
-        rating: rating,
+        _id: response.data.review._id,
+        rating: ratingNumber,
         comment: comment,
-        name: user.username
+        name: user.username,
+        user: user.id,
+        createdAt: new Date().toISOString()
       };
 
       // Update the meals state with the new review
@@ -276,13 +296,18 @@ const HomePage: React.FC = () => {
       setRating(0);
       setComment("");
       toast.success(language === 'ar' ? "تم إضافة التقييم بنجاح" : "Review added successfully");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error submitting review:", error);
-      toast.error(language === 'ar' ? "حدث خطأ أثناء إضافة التقييم" : "Error adding review");
+      console.error("Error response:", error.response?.data);
+      const errorMessage = error.response?.data?.message || error.message;
+      toast.error(language === 'ar' 
+        ? `حدث خطأ أثناء إضافة التقييم: ${errorMessage}` 
+        : `Error adding review: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
   };
+  
 
   if (loading) {
     return (

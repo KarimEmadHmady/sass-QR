@@ -43,8 +43,9 @@ type User = RegularUser | RestaurantUser;
 // شكل بيانات الكونتكست
 interface AuthContextType {
   restaurant: RestaurantUser | null;
+  user: RegularUser | null;
   token: string | null;
-  login: (restaurant: RestaurantUser, token: string) => void;
+  login: (userData: RestaurantUser | RegularUser, token: string) => void;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -55,6 +56,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // بروڤايدر
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [restaurant, setRestaurant] = useState<RestaurantUser | null>(null);
+  const [user, setUser] = useState<RegularUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -65,20 +67,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('AuthProvider: Initializing auth state');
       const storedToken = localStorage.getItem('token');
       const storedRestaurant = localStorage.getItem('restaurant');
+      const storedUser = localStorage.getItem('user');
 
-      console.log('AuthProvider: Stored data:', { storedToken, storedRestaurant });
+      console.log('AuthProvider: Stored data:', { storedToken, storedRestaurant, storedUser });
 
-      if (storedToken && storedRestaurant) {
+      if (storedToken) {
         try {
-          const parsedRestaurant = JSON.parse(storedRestaurant);
-          console.log('AuthProvider: Parsed restaurant data:', parsedRestaurant);
+          // تحديث التوكن في الحالة
           setToken(storedToken);
-          setRestaurant(parsedRestaurant);
+          
+          if (storedRestaurant) {
+            const parsedRestaurant = JSON.parse(storedRestaurant);
+            setRestaurant(parsedRestaurant);
+          }
+          
+          if (storedUser) {
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+          }
+          
           setIsAuthenticated(true);
         } catch (error) {
-          console.error('AuthProvider: Error parsing stored restaurant data:', error);
+          console.error('AuthProvider: Error parsing stored data:', error);
+          // مسح البيانات المخزنة في حالة حدوث خطأ
           localStorage.removeItem('token');
           localStorage.removeItem('restaurant');
+          localStorage.removeItem('user');
+          setToken(null);
+          setRestaurant(null);
+          setUser(null);
+          setIsAuthenticated(false);
         }
       }
       setIsInitialized(true);
@@ -87,19 +105,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initializeAuth();
   }, []);
 
-  const login = (restaurant: RestaurantUser, token: string) => {
-    console.log('AuthProvider: Login called with:', { restaurant, token });
+  const login = (userData: RestaurantUser | RegularUser, token: string) => {
+    console.log('AuthProvider: Login called with:', { userData, token });
     
     // First update state
-    setRestaurant(restaurant);
+    if ('subdomain' in userData) {
+      // This is a restaurant
+      setRestaurant(userData);
+      setUser(null);
+      localStorage.setItem('restaurant', JSON.stringify(userData));
+    } else {
+      // This is a regular user
+      setUser(userData);
+      setRestaurant(null);
+      localStorage.setItem('user', JSON.stringify(userData));
+    }
+    
+    // تحديث التوكن في الحالة
     setToken(token);
     setIsAuthenticated(true);
     
-    // Then save to localStorage
-    localStorage.setItem('token', token);
-    localStorage.setItem('restaurant', JSON.stringify(restaurant));
-    
-    console.log('AuthProvider: Login completed');
+    console.log('AuthProvider: Login completed with token:', token);
   };
 
   const logout = () => {
@@ -107,18 +133,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     // First clear state
     setRestaurant(null);
+    setUser(null);
     setToken(null);
     setIsAuthenticated(false);
     
     // Then clear localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('restaurant');
+    localStorage.removeItem('user');
     
     console.log('AuthProvider: Logout completed');
   };
 
   const value = {
     restaurant,
+    user,
     token,
     login,
     logout,
