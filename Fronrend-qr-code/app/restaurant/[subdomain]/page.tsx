@@ -382,7 +382,6 @@ export default function RestaurantPage() {
             </p>
           </div>
           <div className="bg-white rounded-lg shadow-md p-6 text-center">
-
             <button
               onClick={() => setShowQR(true)}
               className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 mx-auto"
@@ -393,179 +392,221 @@ export default function RestaurantPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Restaurant Info */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold">{t.aboutUs}</h2>
-              {token && (
-                <button
-                  onClick={handleEdit}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  {t.editProfile}
-                </button>
-              )}
-            </div>
-            {isEditing ? (
-              <div className="space-y-4">
+        {/* Restaurant Info */}
+        <div className="bg-white rounded-lg shadow-md p-8">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">{t.aboutUs}</h2>
+            {token && (
+              <button
+                onClick={handleEdit}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                {t.editProfile}
+              </button>
+            )}
+          </div>
+          {isEditing ? (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">{t.name}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t.name}</label>
                   <input
                     type="text"
                     value={editedRestaurant.name || ''}
                     onChange={(e) => setEditedRestaurant(prev => ({ ...prev, name: e.target.value }))}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">{t.phone}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t.phone}</label>
                   <input
                     type="text"
                     value={editedRestaurant.phone || ''}
                     onChange={(e) => setEditedRestaurant(prev => ({ ...prev, phone: e.target.value }))}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">{t.address}</label>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t.address}</label>
                   <input
                     type="text"
                     value={editedRestaurant.address || ''}
                     onChange={(e) => setEditedRestaurant(prev => ({ ...prev, address: e.target.value }))}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
+              </div>
 
-                {/* Logo Upload */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">{t.logo}</label>
-                  <div className="mt-1 flex items-center space-x-4">
-                    {(logoPreview || authRestaurant.logo) && (
-                      <div className="relative w-24 h-24">
-                        <img
-                          src={logoPreview || authRestaurant.logo}
-                          alt="Logo preview"
-                          className="w-full h-full object-cover rounded-full"
-                        />
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoChange}
-                        className="block w-full text-sm text-gray-500
-                          file:mr-4 file:py-2 file:px-4
-                          file:rounded-full file:border-0
-                          file:text-sm file:font-semibold
-                          file:bg-blue-50 file:text-blue-700
-                          hover:file:bg-blue-100"
+              {/* Logo Upload */}
+              <div className="border-t pt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-4">{t.logo}</label>
+                <div className="flex items-center space-x-6">
+                  {(logoPreview || authRestaurant.logo) && (
+                    <div className="relative w-32 h-32">
+                      <img
+                        src={logoPreview || authRestaurant.logo}
+                        alt="Logo preview"
+                        className="w-full h-full object-cover rounded-full"
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoChange}
+                      className="block w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-blue-50 file:text-blue-700
+                        hover:file:bg-blue-100"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Banner Upload */}
+              <div className="border-t pt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-4">{t.banner}</label>
+                <div className="flex items-center space-x-6">
+                  {(bannerPreview || authRestaurant.banner) && (
+                    <div className="relative w-48 h-32">
+                      <img
+                        src={bannerPreview || authRestaurant.banner}
+                        alt="Banner preview"
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleBannerChange}
+                      className="block w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-blue-50 file:text-blue-700
+                        hover:file:bg-blue-100"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-4 pt-6 border-t">
+                <button
+                  onClick={() => {
+                    setIsEditing(false);
+                    setLogoPreview(null);
+                    setBannerPreview(null);
+                    setLogoFile(null);
+                    setBannerFile(null);
+                  }}
+                  className="px-6 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+                >
+                  {t.cancel}
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                >
+                  {t.saveChanges}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {/* Restaurant Basic Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <div className="flex items-center space-x-4 mb-6">
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                      <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">{authRestaurant.name}</h3>
+                      <p className="text-gray-600">{authRestaurant.email}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-3">
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                      <span className="text-gray-600">{authRestaurant.phone}</span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span className="text-gray-600">{authRestaurant.address}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <div className="flex items-center space-x-4 mb-6">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                      <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 8h6m-5 0a3 3 0 110 6H9l3 3m-3-6h6m6 1a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">{t.currency}</h3>
+                      <p className="text-gray-600">{authRestaurant.settings.currency}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-3">
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-gray-600">{authRestaurant.active ? t.active : t.trialPeriod}</span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-gray-600">{stats.totalMeals} {t.totalMeals}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Restaurant Images */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {authRestaurant.logo && (
+                  <div className="bg-gray-50 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t.logo}</h3>
+                    <div className="flex justify-center">
+                      <img
+                        src={authRestaurant.logo}
+                        alt="Restaurant Logo"
+                        className="w-48 h-48 object-cover rounded-full shadow-lg"
                       />
                     </div>
                   </div>
-                </div>
-
-                {/* Banner Upload */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">{t.banner}</label>
-                  <div className="mt-1 flex items-center space-x-4">
-                    {(bannerPreview || authRestaurant.banner) && (
-                      <div className="relative w-32 h-20">
-                        <img
-                          src={bannerPreview || authRestaurant.banner}
-                          alt="Banner preview"
-                          className="w-full h-full object-cover rounded-lg"
-                        />
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleBannerChange}
-                        className="block w-full text-sm text-gray-500
-                          file:mr-4 file:py-2 file:px-4
-                          file:rounded-full file:border-0
-                          file:text-sm file:font-semibold
-                          file:bg-blue-50 file:text-blue-700
-                          hover:file:bg-blue-100"
+                )}
+                {authRestaurant.banner && (
+                  <div className="bg-gray-50 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t.banner}</h3>
+                    <div className="flex justify-center">
+                      <img
+                        src={authRestaurant.banner}
+                        alt="Restaurant Banner"
+                        className="w-full h-48 object-cover rounded-lg shadow-lg"
                       />
                     </div>
                   </div>
-                </div>
-
-                <div className="flex justify-end space-x-2">
-                  <button
-                    onClick={() => {
-                      setIsEditing(false);
-                      setLogoPreview(null);
-                      setBannerPreview(null);
-                      setLogoFile(null);
-                      setBannerFile(null);
-                    }}
-                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
-                  >
-                    {t.cancel}
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                  >
-                    {t.saveChanges}
-                  </button>
-                </div>
+                )}
               </div>
-            ) : (
-              <div className="space-y-2">
-                <p className="text-gray-600">
-                  <span className="font-semibold">{t.address}:</span> {authRestaurant.address}
-                </p>
-                <p className="text-gray-600">
-                  <span className="font-semibold">{t.phone}:</span> {authRestaurant.phone}
-                </p>
-                <p className="text-gray-600">
-                  <span className="font-semibold">{t.email}:</span> {authRestaurant.email}
-                </p>
-                <p className="text-gray-600">
-                  <span className="font-semibold">{t.currency}:</span> {authRestaurant.settings.currency}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Categories List */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-bold mb-4">{t.menuCategories}</h2>
-            {categories.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">{t.noCategories}</p>
-            ) : (
-              <div className="space-y-4">
-                {categories.map((category) => (
-                  <div key={category.id} className="border rounded-lg p-4">
-                    <div className="flex items-center gap-4">
-                      {category.image && (
-                        <img
-                          src={category.image}
-                          alt={category.name[language]}
-                          className="w-16 h-16 rounded-lg object-cover"
-                        />
-                      )}
-                      <div>
-                        <h3 className="font-semibold text-lg">{category.name[language]}</h3>
-                        {category.description && (
-                          <p className="text-gray-600 text-sm">{category.description[language]}</p>
-                        )}
-                        <p className="text-sm text-gray-500">
-                          {category.meals?.length || 0} {t.mealsInCategory}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* QR Code Modal */}
