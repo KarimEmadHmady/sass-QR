@@ -5,6 +5,8 @@ import { useParams } from 'next/navigation';
 import { useSubdomain } from '@/contexts/SubdomainContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { QRCodeCanvas } from 'qrcode.react';
+import { FaQrcode } from 'react-icons/fa';
 
 interface Restaurant {
   id: string;
@@ -76,7 +78,11 @@ const translations = {
     loading: 'Loading...',
     authenticationError: 'Authentication error. Please login again.',
     profileUpdateSuccess: 'Profile updated successfully!',
-    profileUpdateError: 'Failed to update profile. Please try again.'
+    profileUpdateError: 'Failed to update profile. Please try again.',
+    viewQR: 'View QR Code',
+    downloadQR: 'Download QR Code',
+    close: 'Close',
+    scanQR: 'Scan this QR code to view the menu'
   },
   ar: {
     totalCategories: 'إجمالي الفئات',
@@ -103,7 +109,11 @@ const translations = {
     loading: 'جاري التحميل...',
     authenticationError: 'خطأ في المصادقة. يرجى تسجيل الدخول مرة أخرى.',
     profileUpdateSuccess: 'تم تحديث الملف الشخصي بنجاح!',
-    profileUpdateError: 'فشل تحديث الملف الشخصي. يرجى المحاولة مرة أخرى.'
+    profileUpdateError: 'فشل تحديث الملف الشخصي. يرجى المحاولة مرة أخرى.',
+    viewQR: 'عرض رمز QR',
+    downloadQR: 'تحميل رمز QR',
+    close: 'إغلاق',
+    scanQR: 'امسح رمز QR لعرض القائمة'
   }
 };
 
@@ -125,6 +135,7 @@ export default function RestaurantPage() {
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [showQR, setShowQR] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -294,6 +305,19 @@ export default function RestaurantPage() {
     }
   };
 
+  const handleDownloadQR = () => {
+    const canvas = document.getElementById('qr-code') as HTMLCanvasElement;
+    if (canvas) {
+      const pngUrl = canvas.toDataURL('image/png');
+      const downloadLink = document.createElement('a');
+      downloadLink.href = pngUrl;
+      downloadLink.download = `${authRestaurant?.name}-qr.png`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -342,7 +366,7 @@ export default function RestaurantPage() {
       {/* Restaurant Content */}
       <main className="container mx-auto px-4 py-8">
         {/* Stats Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow-md p-6 text-center">
             <h3 className="text-lg font-semibold text-gray-600">{t.totalCategories}</h3>
             <p className="text-3xl font-bold text-gray-900">{stats.totalCategories}</p>
@@ -356,6 +380,16 @@ export default function RestaurantPage() {
             <p className={`text-3xl font-bold ${authRestaurant.active ? 'text-green-600' : 'text-yellow-600'}`}>
               {authRestaurant.active ? t.active : t.trialPeriod}
             </p>
+          </div>
+          <div className="bg-white rounded-lg shadow-md p-6 text-center">
+
+            <button
+              onClick={() => setShowQR(true)}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 mx-auto"
+            >
+              <FaQrcode />
+              <span>{t.viewQR}</span>
+            </button>
           </div>
         </div>
 
@@ -533,6 +567,41 @@ export default function RestaurantPage() {
             )}
           </div>
         </div>
+
+        {/* QR Code Modal */}
+        {showQR && (
+          <div className="fixed inset-0 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+              <div className="text-center">
+                <h3 className="text-xl font-bold mb-4">{t.viewQR}</h3>
+                <div className="flex justify-center mb-4">
+                  <QRCodeCanvas
+                    id="qr-code"
+                    value={window.location.origin}
+                    size={256}
+                    level="H"
+                    includeMargin={true}
+                  />
+                </div>
+                <p className="text-gray-600 mb-6">{t.scanQR}</p>
+                <div className="flex justify-center gap-4">
+                  <button
+                    onClick={handleDownloadQR}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  >
+                    {t.downloadQR}
+                  </button>
+                  <button
+                    onClick={() => setShowQR(false)}
+                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+                  >
+                    {t.close}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

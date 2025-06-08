@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import Image from 'next/image';
-import { FaUsers, FaUtensils, FaTags, FaStar, FaQrcode, FaChartLine, FaClock, FaEdit, FaTrash } from 'react-icons/fa';
+import { FaUsers, FaUtensils, FaTags, FaStar, FaQrcode, FaChartLine, FaClock, FaEdit, FaTrash, FaMoneyBill } from 'react-icons/fa';
 import Link from 'next/link';
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -40,11 +40,10 @@ interface Meal {
 }
 
 interface DashboardStats {
-  totalUsers: number;
+  totalReviews: number;
   totalMeals: number;
   totalCategories: number;
-  totalReviews: number;
-  totalScans: number;
+  averageMealPrice: number;
   averageRating: number;
   subscriptionStatus: string;
   trialDaysLeft: number;
@@ -56,14 +55,13 @@ export default function RestaurantDashboard() {
   const { language } = useLanguage();
   const [meals, setMeals] = useState<Meal[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
-    totalUsers: 0,
+    totalReviews: 0,
     totalMeals: 0,
     totalCategories: 0,
-    totalReviews: 0,
-    totalScans: 0,
+    averageMealPrice: 0,
     averageRating: 0,
     subscriptionStatus: 'trial',
-    trialDaysLeft: 7
+    trialDaysLeft: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -75,6 +73,26 @@ export default function RestaurantDashboard() {
 
     const fetchData = async () => {
       try {
+        // Fetch restaurant profile to get trial information
+        const restaurantRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!restaurantRes.ok) {
+          throw new Error(`Failed to fetch restaurant profile: ${restaurantRes.status}`);
+        }
+
+        const restaurantData = await restaurantRes.json();
+        console.log('Restaurant data:', restaurantData);
+
+        // Calculate remaining trial days
+        const trialEndsAt = new Date(restaurantData.subscription.trialEndsAt);
+        const now = new Date();
+        const remainingDays = Math.ceil((trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        const trialDaysLeft = Math.max(0, remainingDays);
+
         // Fetch meals
         const mealsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/meals`, {
           headers: {
@@ -111,17 +129,19 @@ export default function RestaurantDashboard() {
         const averageRating = mealsData.length > 0 
           ? mealsData.reduce((acc: number, meal: Meal) => acc + (meal.rating || 0), 0) / mealsData.length 
           : 0;
+        const averageMealPrice = mealsData.length > 0
+          ? mealsData.reduce((acc: number, meal: Meal) => acc + meal.price, 0) / mealsData.length
+          : 0;
 
         // Update stats
         setStats({
-          totalUsers: 0, // TODO: Implement user tracking
+          totalReviews,
           totalMeals,
           totalCategories,
-          totalReviews,
-          totalScans: 0, // TODO: Implement QR scan tracking
+          averageMealPrice,
           averageRating,
-          subscriptionStatus: 'trial',
-          trialDaysLeft: 7
+          subscriptionStatus: restaurantData.subscription.status,
+          trialDaysLeft
         });
 
       } catch (error) {
@@ -129,14 +149,13 @@ export default function RestaurantDashboard() {
         toast.error(language === 'ar' ? 'حدث خطأ في تحميل البيانات' : 'Error loading dashboard data');
         // Set default values in case of error
         setStats({
-          totalUsers: 0,
+          totalReviews: 0,
           totalMeals: 0,
           totalCategories: 0,
-          totalReviews: 0,
-          totalScans: 0,
+          averageMealPrice: 0,
           averageRating: 0,
           subscriptionStatus: 'trial',
-          trialDaysLeft: 7
+          trialDaysLeft: 0
         });
         setMeals([]);
       } finally {
@@ -174,9 +193,9 @@ export default function RestaurantDashboard() {
       en: "Statistics",
       ar: "الإحصائيات"
     },
-    totalUsers: {
-      en: "Total Users",
-      ar: "إجمالي المستخدمين"
+    totalReviews: {
+      en: "Total Reviews",
+      ar: "إجمالي التقييمات"
     },
     totalMeals: {
       en: "Total Meals",
@@ -186,13 +205,9 @@ export default function RestaurantDashboard() {
       en: "Total Categories",
       ar: "إجمالي الفئات"
     },
-    totalReviews: {
-      en: "Total Reviews",
-      ar: "إجمالي التقييمات"
-    },
-    totalScans: {
-      en: "Total QR Scans",
-      ar: "إجمالي عمليات المسح"
+    averageMealPrice: {
+      en: "Average Meal Price",
+      ar: "متوسط سعر الوجبات"
     },
     averageRating: {
       en: "Average Rating",
@@ -269,17 +284,7 @@ export default function RestaurantDashboard() {
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-blue-100 p-3 rounded-full">
-                <FaUsers className="text-blue-600 text-2xl" />
-              </div>
-              <div>
-                <h3 className="text-gray-500 text-sm">{translations.totalUsers[language]}</h3>
-                <p className="text-2xl font-bold">{stats.totalUsers}</p>
-              </div>
-            </div>
-          </div>
+
           <div className="bg-white rounded-xl shadow-lg p-6">
             <div className="flex items-center gap-4">
               <div className="bg-green-100 p-3 rounded-full">
@@ -308,6 +313,17 @@ export default function RestaurantDashboard() {
                 <FaStar className="text-yellow-600 text-2xl" />
               </div>
               <div>
+                <h3 className="text-gray-500 text-sm">{translations.totalReviews[language]}</h3>
+                <p className="text-2xl font-bold">{stats.totalReviews}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-yellow-100 p-3 rounded-full">
+                <FaStar className="text-yellow-600 text-2xl" />
+              </div>
+              <div>
                 <h3 className="text-gray-500 text-sm">{translations.averageRating[language]}</h3>
                 <p className="text-2xl font-bold">{stats.averageRating.toFixed(1)}</p>
               </div>
@@ -319,12 +335,12 @@ export default function RestaurantDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl shadow-lg p-6">
             <div className="flex items-center gap-4">
-              <div className="bg-indigo-100 p-3 rounded-full">
-                <FaQrcode className="text-indigo-600 text-2xl" />
+              <div className="bg-green-100 p-3 rounded-full">
+                <FaMoneyBill className="text-green-600 text-2xl" />
               </div>
               <div>
-                <h3 className="text-gray-500 text-sm">{translations.totalScans[language]}</h3>
-                <p className="text-2xl font-bold">{stats.totalScans}</p>
+                <h3 className="text-gray-500 text-sm">{translations.averageMealPrice[language]}</h3>
+                <p className="text-2xl font-bold">{stats.averageMealPrice.toFixed(2)} EGP</p>
               </div>
             </div>
           </div>
