@@ -156,7 +156,7 @@ router.get('/profile', authenticate, async (req, res, next) => {
 });
 
 // Update restaurant profile
-router.put('/profile', upload.fields([
+router.put('/profile', authenticate, upload.fields([
   { name: 'logo', maxCount: 1 },
   { name: 'banner', maxCount: 1 }
 ]), async (req, res, next) => {
@@ -211,6 +211,22 @@ router.get('/:subdomain', async (req, res, next) => {
       return res.status(404).json({ message: 'Restaurant not found' });
     }
 
+    res.json(restaurant);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get restaurant by subdomain
+router.get('/subdomain/:subdomain', async (req, res, next) => {
+  try {
+    const restaurant = await Restaurant.findOne({ subdomain: req.params.subdomain })
+      .select('-password -__v');
+    
+    if (!restaurant) {
+      return res.status(404).json({ message: 'Restaurant not found' });
+    }
+    
     res.json(restaurant);
   } catch (error) {
     next(error);
