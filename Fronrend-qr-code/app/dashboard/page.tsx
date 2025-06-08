@@ -30,6 +30,13 @@ interface Meal {
       ar: string;
     };
   };
+  reviews?: Array<{
+    _id: string;
+    rating: number;
+    comment: string;
+    user: string;
+  }>;
+  rating?: number;
 }
 
 interface DashboardStats {
@@ -100,9 +107,9 @@ export default function RestaurantDashboard() {
         // Calculate statistics
         const totalMeals = mealsData.length;
         const totalCategories = categoriesData.length;
-        const totalReviews = mealsData.reduce((acc, meal) => acc + (meal.reviews?.length || 0), 0);
+        const totalReviews = mealsData.reduce((acc: number, meal: Meal) => acc + (meal.reviews?.length || 0), 0);
         const averageRating = mealsData.length > 0 
-          ? mealsData.reduce((acc, meal) => acc + (meal.rating || 0), 0) / mealsData.length 
+          ? mealsData.reduce((acc: number, meal: Meal) => acc + (meal.rating || 0), 0) / mealsData.length 
           : 0;
 
         // Update stats
@@ -250,13 +257,7 @@ export default function RestaurantDashboard() {
       <div className="min-h-screen flex items-center justify-center bg-[#eee]">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <Image 
-            src="/logo.png"
-              alt="Application logo"
-              className="h-[150px] w-[150px] object-center block mx-auto mb-6 group-hover:scale-105 transition-transform duration-500"
-              width={500} 
-              height={300} 
-          />
+
         </div>
       </div>
     );
@@ -366,7 +367,7 @@ export default function RestaurantDashboard() {
               <span>{translations.viewQR[language]}</span>
             </Link>
             <Link
-              href="/dashboard/settings"
+              href={`/restaurant/${restaurant?.id}`}
               className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
             >
               <FaChartLine className="text-blue-600 text-xl" />

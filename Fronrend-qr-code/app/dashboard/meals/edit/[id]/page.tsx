@@ -311,13 +311,6 @@ const EditMealPage = () => {
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <div className="text-gray-600 font-medium">
-            <Image 
-              src="/logo.png"
-              className="h-[150px] w-[150px] object-center block mx-auto mb-6"
-              alt="Logo"
-              width={600}
-              height={400}
-            />
           </div>
         </div>
       </div>

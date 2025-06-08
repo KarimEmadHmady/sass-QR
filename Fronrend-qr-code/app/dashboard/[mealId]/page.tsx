@@ -107,13 +107,6 @@ const MealDetailsPage = () => {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <Image
-            src="/logo.png"
-            alt="شعار التطبيق"
-            width={150}
-            height={150}
-            className="object-center block mx-auto mb-6"
-          />
         </div>
       </div>
     )

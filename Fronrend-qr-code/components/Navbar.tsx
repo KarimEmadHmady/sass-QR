@@ -16,11 +16,49 @@ import {
 import Image from "next/image";
 import { FiLogOut } from "react-icons/fi";
 import LanguageSwitcher from "./LanguageSwitcher";
+import { useEffect, useState } from "react";
+
+interface Restaurant {
+  _id: string;
+  name: string;
+  logo: string;
+  subdomain: string;
+}
 
 export default function Navbar() {
   const { restaurant, user, isAuthenticated, logout } = useAuth();
   const router = useRouter();
   const { language } = useLanguage();
+  const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(null);
+
+  useEffect(() => {
+    const fetchRestaurantBySubdomain = async () => {
+      try {
+        // Get current subdomain from URL
+        const hostname = window.location.hostname;
+        const subdomain = hostname.split('.')[0];
+
+        // Skip if we're on localhost or main domain
+        if (hostname === 'localhost' || !hostname.includes('.')) {
+          return;
+        }
+
+        // Fetch restaurant data by subdomain
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/subdomain/${subdomain}`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Restaurant data:', data);
+          setCurrentRestaurant(data);
+        } else {
+          console.error('Failed to fetch restaurant data');
+        }
+      } catch (error) {
+        console.error('Error fetching restaurant:', error);
+      }
+    };
+
+    fetchRestaurantBySubdomain();
+  }, []);
 
   // Translations
   const translations = {
@@ -73,11 +111,16 @@ export default function Navbar() {
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2">
             <Image
-              src="/logo.png"
-              alt="Logo"
-              className="h-[50px] w-[50px]"
+              src={currentRestaurant?.logo || "/logo.png"}
+              alt={currentRestaurant?.name || "Logo"}
+              className="h-[50px] w-[50px] object-cover rounded-full"
               width={75}
               height={75}
+              onError={(e) => {
+                // If the restaurant logo fails to load, fallback to default logo
+                const target = e.target as HTMLImageElement;
+                target.src = "/logo.png";
+              }}
             />
           </Link>
           <LanguageSwitcher />
@@ -121,11 +164,11 @@ export default function Navbar() {
                     <span>{translations.addMeal[language]}</span>
                   </Link>
                   <Link
-                    href="/dashboard/settings"
+                    href={`/restaurant/${restaurant?.id}`}
                     className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
                     title={translations.settings[language]}
                   >
-                    <FaCog />
+                    <FaCog className="w-5 h-5" />
                     <span>{translations.settings[language]}</span>
                   </Link>
                 </div>

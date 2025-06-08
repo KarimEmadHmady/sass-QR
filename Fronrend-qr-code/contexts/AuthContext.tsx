@@ -103,6 +103,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     initializeAuth();
+
+    // Add event listener for restaurant updates
+    const handleRestaurantUpdate = (event: CustomEvent) => {
+      console.log('AuthProvider: Restaurant update received:', event.detail);
+      const updatedRestaurant = event.detail;
+      setRestaurant(updatedRestaurant);
+      localStorage.setItem('restaurant', JSON.stringify(updatedRestaurant));
+    };
+
+    window.addEventListener('restaurantUpdated', handleRestaurantUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener('restaurantUpdated', handleRestaurantUpdate as EventListener);
+    };
   }, []);
 
   const login = (userData: RestaurantUser | RegularUser, token: string) => {

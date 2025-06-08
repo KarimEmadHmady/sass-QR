@@ -41,9 +41,17 @@ interface Meal {
   reviews: Review[];
 }
 
+interface Restaurant {
+  _id: string;
+  name: string;
+  logo: string;
+  banner: string;
+  subdomain: string;
+}
+
 const HomePage: React.FC = () => {
   const { language } = useLanguage();
-  const { isAuthenticated, user } = useAuth() as { isAuthenticated: boolean; user: { id: string; username: string } | null };
+  const { isAuthenticated, user, restaurant } = useAuth() as { restaurant: any; isAuthenticated: boolean; user: { id: string; username: string } | null };
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -57,6 +65,7 @@ const HomePage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTapIndicator, setShowTapIndicator] = useState(true);
   const [isFirstMealShown, setIsFirstMealShown] = useState(false);
+  const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(null);
 
   // Add custom styles for hiding scrollbar
   const scrollableStyle = {
@@ -172,6 +181,35 @@ const HomePage: React.FC = () => {
 
     fetchData();
   }, [language]);
+
+  useEffect(() => {
+    const fetchRestaurantBySubdomain = async () => {
+      try {
+        // Get current subdomain from URL
+        const hostname = window.location.hostname;
+        const subdomain = hostname.split('.')[0];
+
+        // Skip if we're on localhost or main domain
+        if (hostname === 'localhost' || !hostname.includes('.')) {
+          return;
+        }
+
+        // Fetch restaurant data by subdomain
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/subdomain/${subdomain}`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Restaurant data:', data);
+          setCurrentRestaurant(data);
+        } else {
+          console.error('Failed to fetch restaurant data');
+        }
+      } catch (error) {
+        console.error('Error fetching restaurant:', error);
+      }
+    };
+
+    fetchRestaurantBySubdomain();
+  }, []);
 
   useEffect(() => {
     // Hide tap indicator after 5 seconds
@@ -314,15 +352,6 @@ const HomePage: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center bg-[#eee]">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">
-            <Image
-              src={"/logo.png"}
-              alt="Logo"
-              className="h-[150px] w-[150px] object-center block mx-auto mb-6 group-hover:scale-105 transition-transform duration-500"
-              width={500}
-              height={300}
-            />
-          </p>
         </div>
       </div>
     );
@@ -334,13 +363,17 @@ const HomePage: React.FC = () => {
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-primary/90 to-primary text-[#222] py-4 px-3 bg-[#eee]">
         <div className="container mx-auto max-w-6xl relative">
-
           <Image
-            src="/banner.webp"
+            src={currentRestaurant?.banner || "/banner.webp"}
             alt="Banner"
             className="w-full h-[200px] sm:h-[300px] md:h-[400px] lg:h-[300px] lg:w-[500px] object-cover object-[25%_28%] block mx-auto mb-6 transition-transform duration-500 group-hover:scale-105 rounded-[15px]"
             width={500}
             height={400}
+            onError={(e) => {
+              // If the restaurant banner fails to load, fallback to default banner
+              const target = e.target as HTMLImageElement;
+              target.src = "/banner.webp";
+            }}
           />
           <p className="text-center text-[#222] max-w-2xl mx-auto mb-5">
             {language === 'ar' 
