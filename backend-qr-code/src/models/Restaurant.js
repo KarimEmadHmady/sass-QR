@@ -63,11 +63,6 @@ const restaurantSchema = new mongoose.Schema({
     }
   },
   settings: {
-    theme: {
-      type: String,
-      enum: ['light', 'dark'],
-      default: 'light'
-    },
     currency: {
       type: String,
       enum: ['EGP', 'SAR', 'AED'],
@@ -77,6 +72,28 @@ const restaurantSchema = new mongoose.Schema({
       type: String,
       enum: ['ar', 'en'],
       default: 'ar'
+    },
+    socialMedia: {
+      facebook: {
+        type: String,
+        trim: true,
+        default: ''
+      },
+      instagram: {
+        type: String,
+        trim: true,
+        default: ''
+      },
+      tiktok: {
+        type: String,
+        trim: true,
+        default: ''
+      }
+    },
+    location: {
+      type: String,
+      trim: true,
+      default: ''
     }
   }
 }, {

@@ -161,7 +161,14 @@ router.put('/profile', authenticate, upload.fields([
   { name: 'banner', maxCount: 1 }
 ]), async (req, res, next) => {
   try {
-    const { name, phone, address, settings } = req.body;
+    const { 
+      name, 
+      phone, 
+      address, 
+      settings,
+      socialMedia,
+      location 
+    } = req.body;
     const logoUrl = req.files?.logo?.[0]?.path;
     const bannerUrl = req.files?.banner?.[0]?.path;
 
@@ -176,7 +183,26 @@ router.put('/profile', authenticate, upload.fields([
     if (address) restaurant.address = address;
     if (logoUrl) restaurant.logo = logoUrl;
     if (bannerUrl) restaurant.banner = bannerUrl;
-    if (settings) restaurant.settings = { ...restaurant.settings, ...JSON.parse(settings) };
+    
+    // Update settings
+    if (settings) {
+      const parsedSettings = JSON.parse(settings);
+      restaurant.settings = { ...restaurant.settings, ...parsedSettings };
+    }
+
+    // Update social media
+    if (socialMedia) {
+      const parsedSocialMedia = JSON.parse(socialMedia);
+      restaurant.settings.socialMedia = {
+        ...restaurant.settings.socialMedia,
+        ...parsedSocialMedia
+      };
+    }
+
+    // Update location
+    if (location) {
+      restaurant.settings.location = location;
+    }
 
     await restaurant.save();
 
