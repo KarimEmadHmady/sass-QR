@@ -27,10 +27,20 @@ interface RestaurantUser {
   logo?: string;
   banner?: string;
   active: boolean;
+  subscription: {
+    status: 'trial' | 'active' | 'expired';
+    trialEndsAt: Date;
+    plan: 'free' | 'basic' | 'premium';
+  };
   settings: {
-    theme: 'light' | 'dark';
     currency: 'EGP' | 'SAR' | 'AED';
     language: 'ar' | 'en';
+    socialMedia: {
+      facebook: string;
+      instagram: string;
+      tiktok: string;
+    };
+    location: string;
   };
   role: 'restaurant';
   createdAt?: string;

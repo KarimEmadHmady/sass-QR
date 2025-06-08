@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { toast } from "react-hot-toast";
 import Image from "next/image";
 import AnimatedBackground from "@/components/AnimatedBackground";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const EditIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -279,7 +282,8 @@ const CategoriesPage = () => {
 
   // Delete category
   const handleDeleteCategory = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this category?")) {
+    const confirmed = window.confirm(language === 'ar' ? 'هل أنت متأكد من حذف هذه الفئة؟' : 'Are you sure you want to delete this category?');
+    if (confirmed) {
       try {
         const token = localStorage.getItem("token");
         await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/categories/${id}`, {
@@ -288,11 +292,11 @@ const CategoriesPage = () => {
           },
         });
         setCategories(categories.filter((category) => category._id !== id));
-        toast.success("Category deleted successfully");
+        toast.success(language === 'ar' ? 'تم حذف الفئة بنجاح' : 'Category deleted successfully');
       } catch (error) {
         const apiError = error as ApiError;
         console.error("Error deleting category:", error);
-        toast.error(apiError.message || "Failed to delete category");
+        toast.error(apiError.message || (language === 'ar' ? 'فشل في حذف الفئة' : 'Failed to delete category'));
       }
     }
   };

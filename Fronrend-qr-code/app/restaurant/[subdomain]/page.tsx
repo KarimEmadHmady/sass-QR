@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { QRCodeCanvas } from 'qrcode.react';
 import { FaQrcode } from 'react-icons/fa';
+import { toast } from "react-hot-toast";
 
 interface Restaurant {
   id: string;
@@ -18,8 +19,20 @@ interface Restaurant {
   logo?: string;
   banner?: string;
   active: boolean;
+  subscription: {
+    status: 'trial' | 'active' | 'expired';
+    trialEndsAt: Date;
+    plan: 'free' | 'basic' | 'premium';
+  };
   settings: {
-    currency: string;
+    currency: 'EGP' | 'SAR' | 'AED';
+    language: 'ar' | 'en';
+    socialMedia: {
+      facebook: string;
+      instagram: string;
+      tiktok: string;
+    };
+    location: string;
   };
 }
 
@@ -76,13 +89,19 @@ const translations = {
     restaurantNotFound: 'Restaurant Not Found',
     restaurantNotFoundDesc: 'The restaurant you\'re looking for doesn\'t exist.',
     loading: 'Loading...',
-    authenticationError: 'Authentication error. Please login again.',
-    profileUpdateSuccess: 'Profile updated successfully!',
-    profileUpdateError: 'Failed to update profile. Please try again.',
+    authenticationError: 'Authentication error. Please try logging in again.',
+    profileUpdateSuccess: 'Profile updated successfully',
+    profileUpdateError: 'Failed to update profile',
     viewQR: 'View QR Code',
     downloadQR: 'Download QR Code',
     close: 'Close',
-    scanQR: 'Scan this QR code to view the menu'
+    scanQR: 'Scan this QR code to view the menu',
+    socialMedia: 'Social Media',
+    facebook: 'Facebook',
+    instagram: 'Instagram',
+    tiktok: 'TikTok',
+    location: 'Location',
+    locationPlaceholder: 'Enter your restaurant location'
   },
   ar: {
     totalCategories: 'إجمالي الفئات',
@@ -108,12 +127,18 @@ const translations = {
     restaurantNotFoundDesc: 'المطعم الذي تبحث عنه غير موجود.',
     loading: 'جاري التحميل...',
     authenticationError: 'خطأ في المصادقة. يرجى تسجيل الدخول مرة أخرى.',
-    profileUpdateSuccess: 'تم تحديث الملف الشخصي بنجاح!',
-    profileUpdateError: 'فشل تحديث الملف الشخصي. يرجى المحاولة مرة أخرى.',
+    profileUpdateSuccess: 'تم تحديث الملف الشخصي بنجاح',
+    profileUpdateError: 'فشل في تحديث الملف الشخصي',
     viewQR: 'عرض رمز QR',
     downloadQR: 'تحميل رمز QR',
     close: 'إغلاق',
-    scanQR: 'امسح رمز QR لعرض القائمة'
+    scanQR: 'امسح رمز QR لعرض القائمة',
+    socialMedia: 'وسائل التواصل الاجتماعي',
+    facebook: 'فيسبوك',
+    instagram: 'انستجرام',
+    tiktok: 'تيك توك',
+    location: 'الموقع',
+    locationPlaceholder: 'أدخل موقع المطعم'
   }
 };
 
@@ -189,7 +214,17 @@ export default function RestaurantPage() {
       setEditedRestaurant({
         name: authRestaurant.name,
         phone: authRestaurant.phone || '',
-        address: authRestaurant.address || ''
+        address: authRestaurant.address || '',
+        settings: {
+          currency: authRestaurant.settings.currency,
+          language: authRestaurant.settings.language,
+          socialMedia: {
+            facebook: authRestaurant.settings.socialMedia?.facebook || '',
+            instagram: authRestaurant.settings.socialMedia?.instagram || '',
+            tiktok: authRestaurant.settings.socialMedia?.tiktok || ''
+          },
+          location: authRestaurant.settings.location || ''
+        }
       });
       setIsEditing(true);
     }
@@ -219,11 +254,43 @@ export default function RestaurantPage() {
     }
   };
 
+  const handleSocialMediaChange = (platform: 'facebook' | 'instagram' | 'tiktok', value: string) => {
+    setEditedRestaurant(prev => ({
+      ...prev,
+      settings: {
+        currency: prev.settings?.currency || 'EGP',
+        language: prev.settings?.language || 'ar',
+        socialMedia: {
+          facebook: platform === 'facebook' ? value : (prev.settings?.socialMedia?.facebook || ''),
+          instagram: platform === 'instagram' ? value : (prev.settings?.socialMedia?.instagram || ''),
+          tiktok: platform === 'tiktok' ? value : (prev.settings?.socialMedia?.tiktok || '')
+        },
+        location: prev.settings?.location || ''
+      }
+    }));
+  };
+
+  const handleLocationChange = (value: string) => {
+    setEditedRestaurant(prev => ({
+      ...prev,
+      settings: {
+        currency: prev.settings?.currency || 'EGP',
+        language: prev.settings?.language || 'ar',
+        socialMedia: {
+          facebook: prev.settings?.socialMedia?.facebook || '',
+          instagram: prev.settings?.socialMedia?.instagram || '',
+          tiktok: prev.settings?.socialMedia?.tiktok || ''
+        },
+        location: value
+      }
+    }));
+  };
+
   const handleSave = async () => {
     try {
       if (!token || !authRestaurant?.id) {
         console.error('No authentication token or restaurant ID available');
-        alert(t.authenticationError);
+        toast.error(t.authenticationError);
         return;
       }
 
@@ -231,6 +298,19 @@ export default function RestaurantPage() {
       formData.append('name', editedRestaurant.name || '');
       formData.append('phone', editedRestaurant.phone || '');
       formData.append('address', editedRestaurant.address || '');
+      
+      // Add settings data with the updated currency
+      const settings = {
+        currency: editedRestaurant.settings?.currency || authRestaurant.settings.currency,
+        language: editedRestaurant.settings?.language || authRestaurant.settings.language,
+        socialMedia: {
+          facebook: editedRestaurant.settings?.socialMedia?.facebook || '',
+          instagram: editedRestaurant.settings?.socialMedia?.instagram || '',
+          tiktok: editedRestaurant.settings?.socialMedia?.tiktok || ''
+        },
+        location: editedRestaurant.settings?.location || ''
+      };
+      formData.append('settings', JSON.stringify(settings));
       
       if (logoFile) {
         formData.append('logo', logoFile);
@@ -243,11 +323,10 @@ export default function RestaurantPage() {
         name: editedRestaurant.name,
         phone: editedRestaurant.phone,
         address: editedRestaurant.address,
+        settings: settings,
         hasLogo: !!logoFile,
         hasBanner: !!bannerFile
       });
-      console.log('Using token:', token);
-      console.log('API URL:', `${process.env.NEXT_PUBLIC_API_URL}/restaurants/profile`);
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/profile`, {
         method: 'PUT',
@@ -278,7 +357,7 @@ export default function RestaurantPage() {
         }
       }
 
-      alert(t.profileUpdateSuccess);
+      toast.success(t.profileUpdateSuccess);
       setIsEditing(false);
       
       // Reset file states
@@ -292,15 +371,25 @@ export default function RestaurantPage() {
         setEditedRestaurant({
           name: responseData.restaurant.name,
           phone: responseData.restaurant.phone,
-          address: responseData.restaurant.address
+          address: responseData.restaurant.address,
+          settings: {
+            currency: responseData.restaurant.settings.currency,
+            language: responseData.restaurant.settings.language,
+            socialMedia: {
+              facebook: responseData.restaurant.settings.socialMedia?.facebook || '',
+              instagram: responseData.restaurant.settings.socialMedia?.instagram || '',
+              tiktok: responseData.restaurant.settings.socialMedia?.tiktok || ''
+            },
+            location: responseData.restaurant.settings.location || ''
+          }
         });
       }
     } catch (error) {
       console.error('Error updating profile:', error);
       if (error instanceof Error) {
-        alert(`${t.profileUpdateError}: ${error.message}`);
+        toast.error(`${t.profileUpdateError}: ${error.message}`);
       } else {
-        alert(t.profileUpdateError);
+        toast.error(t.profileUpdateError);
       }
     }
   };
@@ -495,6 +584,103 @@ export default function RestaurantPage() {
                 </div>
               </div>
 
+              {/* Currency Selection */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900">{t.currency}</h3>
+                <div>
+                  <label htmlFor="currency" className="block text-sm font-medium text-gray-700">
+                    {t.currency}
+                  </label>
+                  <select
+                    id="currency"
+                    value={editedRestaurant.settings?.currency || 'EGP'}
+                    onChange={(e) => setEditedRestaurant(prev => ({
+                      ...prev,
+                      settings: {
+                        ...prev.settings,
+                        currency: e.target.value as 'EGP' | 'SAR' | 'AED',
+                        language: prev.settings?.language || 'ar',
+                        socialMedia: {
+                          facebook: prev.settings?.socialMedia?.facebook || '',
+                          instagram: prev.settings?.socialMedia?.instagram || '',
+                          tiktok: prev.settings?.socialMedia?.tiktok || ''
+                        },
+                        location: prev.settings?.location || ''
+                      }
+                    }))}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  >
+                    <option value="EGP">EGP - الجنيه المصري</option>
+                    <option value="SAR">SAR - الريال السعودي</option>
+                    <option value="AED">AED - الدرهم الإماراتي</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Social Media Links */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900">{t.socialMedia}</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label htmlFor="facebook" className="block text-sm font-medium text-gray-700">
+                      Facebook
+                    </label>
+                    <input
+                      type="url"
+                      id="facebook"
+                      value={editedRestaurant.settings?.socialMedia?.facebook || ''}
+                      onChange={(e) => handleSocialMediaChange('facebook', e.target.value)}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      placeholder="https://facebook.com/your-page"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="instagram" className="block text-sm font-medium text-gray-700">
+                      Instagram
+                    </label>
+                    <input
+                      type="url"
+                      id="instagram"
+                      value={editedRestaurant.settings?.socialMedia?.instagram || ''}
+                      onChange={(e) => handleSocialMediaChange('instagram', e.target.value)}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      placeholder="https://instagram.com/your-page"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="tiktok" className="block text-sm font-medium text-gray-700">
+                      TikTok
+                    </label>
+                    <input
+                      type="url"
+                      id="tiktok"
+                      value={editedRestaurant.settings?.socialMedia?.tiktok || ''}
+                      onChange={(e) => handleSocialMediaChange('tiktok', e.target.value)}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      placeholder="https://tiktok.com/@your-account"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Location */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900">{t.location}</h3>
+                <div>
+                  <label htmlFor="location" className="block text-sm font-medium text-gray-700">
+                    {t.location}
+                  </label>
+                  <input
+                    type="text"
+                    id="location"
+                    value={editedRestaurant.settings?.location || ''}
+                    onChange={(e) => handleLocationChange(e.target.value)}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    placeholder={language === 'ar' ? 'موقع المطعم' : 'Restaurant location'}
+                  />
+                </div>
+              </div>
+
               <div className="flex justify-end space-x-4 pt-6 border-t">
                 <button
                   onClick={() => {
@@ -604,6 +790,52 @@ export default function RestaurantPage() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Social Media and Location Section */}
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-6">{t.socialMedia}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {authRestaurant.settings.socialMedia?.facebook && (
+                    <div className="flex items-center space-x-3">
+                      <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/>
+                      </svg>
+                      <a href={authRestaurant.settings.socialMedia.facebook} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        {t.facebook}
+                      </a>
+                    </div>
+                  )}
+                  {authRestaurant.settings.socialMedia?.instagram && (
+                    <div className="flex items-center space-x-3">
+                      <svg className="w-5 h-5 text-pink-600" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                      </svg>
+                      <a href={authRestaurant.settings.socialMedia.instagram} target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:underline">
+                        {t.instagram}
+                      </a>
+                    </div>
+                  )}
+                  {authRestaurant.settings.socialMedia?.tiktok && (
+                    <div className="flex items-center space-x-3">
+                      <svg className="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
+                      </svg>
+                      <a href={authRestaurant.settings.socialMedia.tiktok} target="_blank" rel="noopener noreferrer" className="text-gray-900 hover:underline">
+                        {t.tiktok}
+                      </a>
+                    </div>
+                  )}
+                  {authRestaurant.settings.location && (
+                    <div className="flex items-center space-x-3">
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      </svg>
+                      <span className="text-gray-600">{authRestaurant.settings.location}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

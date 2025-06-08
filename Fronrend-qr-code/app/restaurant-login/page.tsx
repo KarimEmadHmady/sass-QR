@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import AnimatedBackground from "@/components/AnimatedBackground";
+import { toast } from "react-hot-toast";
 
 export default function RestaurantLoginPage() {
   const router = useRouter();
@@ -66,17 +67,22 @@ export default function RestaurantLoginPage() {
       const savedRestaurant = localStorage.getItem('restaurant');
       console.log('Verification - Saved data:', { savedToken, savedRestaurant });
       
+      toast.success(language === 'ar' ? 'تم تسجيل الدخول بنجاح' : 'Login successful');
+      
       // Redirect to dashboard using window.location.replace to prevent back button issues
       const redirectUrl = `http://${restaurant.subdomain}.localhost:3000/dashboard`;
       console.log('Redirecting to:', redirectUrl);
       window.location.replace(redirectUrl);
       
-    } catch (error: unknown) {
+    } catch (error) {
       console.error('Login error:', error);
-      setError((error as Error).message || (language === 'ar' ? "حدث خطأ ما" : "Something went wrong"));
-      // Clear any partial data on error
-      localStorage.removeItem('token');
-      localStorage.removeItem('restaurant');
+      if (error instanceof Error) {
+        setError(error.message);
+        toast.error(error.message);
+      } else {
+        setError(language === 'ar' ? 'حدث خطأ أثناء تسجيل الدخول' : 'An error occurred during login');
+        toast.error(language === 'ar' ? 'حدث خطأ أثناء تسجيل الدخول' : 'An error occurred during login');
+      }
     } finally {
       setLoading(false);
     }

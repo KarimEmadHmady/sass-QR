@@ -15,7 +15,15 @@ export default function RestaurantRegisterPage() {
     password: "",
     phone: "",
     address: "",
-    subdomain: ""
+    subdomain: "",
+    settings: {
+      socialMedia: {
+        facebook: "",
+        instagram: "",
+        tiktok: ""
+      },
+      location: ""
+    }
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -38,10 +46,19 @@ export default function RestaurantRegisterPage() {
     setError(null);
 
     try {
+      // Format the data to match backend expectations
+      const formattedData = {
+        ...formData,
+        settings: JSON.stringify({
+          socialMedia: formData.settings.socialMedia,
+          location: formData.settings.location
+        })
+      };
+
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(formattedData),
       });
 
       const data = await res.json();
@@ -108,6 +125,22 @@ export default function RestaurantRegisterPage() {
     login: {
       en: "Login",
       ar: "تسجيل الدخول"
+    },
+    facebook: {
+      en: "Facebook Link",
+      ar: "رابط الفيسبوك"
+    },
+    instagram: {
+      en: "Instagram Link",
+      ar: "رابط الانستجرام"
+    },
+    tiktok: {
+      en: "TikTok Link",
+      ar: "رابط التيك توك"
+    },
+    location: {
+      en: "Restaurant Location",
+      ar: "موقع المطعم"
     }
   };
 
@@ -215,6 +248,91 @@ export default function RestaurantRegisterPage() {
             <p className="mt-1 text-sm text-gray-500">
               {translations.subdomainHint[language]}
             </p>
+          </div>
+
+          <div>
+            <label htmlFor="facebook" className="block text-sm font-medium text-gray-700 mb-1">
+              {translations.facebook[language]}
+            </label>
+            <input
+              type="url"
+              id="facebook"
+              value={formData.settings.socialMedia.facebook}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                settings: {
+                  ...prev.settings,
+                  socialMedia: {
+                    ...prev.settings.socialMedia,
+                    facebook: e.target.value
+                  }
+                }
+              }))}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="instagram" className="block text-sm font-medium text-gray-700 mb-1">
+              {translations.instagram[language]}
+            </label>
+            <input
+              type="url"
+              id="instagram"
+              value={formData.settings.socialMedia.instagram}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                settings: {
+                  ...prev.settings,
+                  socialMedia: {
+                    ...prev.settings.socialMedia,
+                    instagram: e.target.value
+                  }
+                }
+              }))}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="tiktok" className="block text-sm font-medium text-gray-700 mb-1">
+              {translations.tiktok[language]}
+            </label>
+            <input
+              type="url"
+              id="tiktok"
+              value={formData.settings.socialMedia.tiktok}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                settings: {
+                  ...prev.settings,
+                  socialMedia: {
+                    ...prev.settings.socialMedia,
+                    tiktok: e.target.value
+                  }
+                }
+              }))}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+              {translations.location[language]}
+            </label>
+            <input
+              type="text"
+              id="location"
+              value={formData.settings.location}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                settings: {
+                  ...prev.settings,
+                  location: e.target.value
+                }
+              }))}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+            />
           </div>
         </div>
 

@@ -8,7 +8,7 @@ import AnimatedBackground from "@/components/AnimatedBackground";
 import Image from 'next/image';
 import { FaUsers, FaUtensils, FaTags, FaStar, FaQrcode, FaChartLine, FaClock, FaEdit, FaTrash, FaMoneyBill } from 'react-icons/fa';
 import Link from 'next/link';
-import { toast } from "react-toastify";
+import { toast } from "react-hot-toast";
 import "react-toastify/dist/ReactToastify.css";
 
 interface Meal {
@@ -167,7 +167,8 @@ export default function RestaurantDashboard() {
   }, [isAuthenticated, restaurant, token, router]);
 
   const deleteMeal = async (id: string) => {
-    if (window.confirm(language === 'ar' ? 'هل أنت متأكد من حذف هذه الوجبة؟' : 'Are you sure you want to delete this meal?')) {
+    const confirmed = window.confirm(language === 'ar' ? 'هل أنت متأكد من حذف هذه الوجبة؟' : 'Are you sure you want to delete this meal?');
+    if (confirmed) {
       try {
         await fetch(`${process.env.NEXT_PUBLIC_API_URL}/meals/${id}`, {
           method: 'DELETE',
