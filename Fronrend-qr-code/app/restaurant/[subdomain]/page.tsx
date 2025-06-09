@@ -9,6 +9,12 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { FaQrcode } from 'react-icons/fa';
 import { toast } from "react-hot-toast";
 
+interface MongoDate {
+  $date: {
+    $numberLong: string;
+  };
+}
+
 interface Restaurant {
   id: string;
   name: string;
@@ -21,7 +27,7 @@ interface Restaurant {
   active: boolean;
   subscription: {
     status: 'trial' | 'active' | 'expired';
-    trialEndsAt: Date;
+    trialEndsAt: MongoDate;
     plan: 'free' | 'basic' | 'premium';
   };
   settings: {
@@ -72,6 +78,8 @@ const translations = {
     accountStatus: 'Account Status',
     active: 'Active',
     trialPeriod: 'Trial Period',
+    remainingDays: 'Remaining Days',
+    remainingTime: 'Remaining Time',
     aboutUs: 'About Us',
     editProfile: 'Edit Profile',
     name: 'Name',
@@ -101,7 +109,8 @@ const translations = {
     instagram: 'Instagram',
     tiktok: 'TikTok',
     location: 'Location',
-    locationPlaceholder: 'Enter your restaurant location'
+    locationPlaceholder: 'Enter your restaurant location',
+    expired: 'Expired'
   },
   ar: {
     totalCategories: 'إجمالي الفئات',
@@ -109,6 +118,8 @@ const translations = {
     accountStatus: 'حالة الحساب',
     active: 'نشط',
     trialPeriod: 'فترة تجريبية',
+    remainingDays: 'الأيام المتبقية',
+    remainingTime: 'الوقت المتبقي',
     aboutUs: 'من نحن',
     editProfile: 'تعديل الملف الشخصي',
     name: 'الاسم',
@@ -138,7 +149,8 @@ const translations = {
     instagram: 'انستجرام',
     tiktok: 'تيك توك',
     location: 'الموقع',
-    locationPlaceholder: 'أدخل موقع المطعم'
+    locationPlaceholder: 'أدخل موقع المطعم',
+    expired: 'منتهي'
   }
 };
 
@@ -348,10 +360,16 @@ export default function RestaurantPage() {
       
       // Update the local state with the new data
       if (responseData.restaurant) {
+        // Preserve subscription data when updating
+        const updatedRestaurant = {
+          ...responseData.restaurant,
+          subscription: authRestaurant.subscription // Keep existing subscription data
+        };
+        
         // Update the auth context with new restaurant data
         if (typeof window !== 'undefined') {
           const event = new CustomEvent('restaurantUpdated', {
-            detail: responseData.restaurant
+            detail: updatedRestaurant
           });
           window.dispatchEvent(event);
         }
@@ -407,6 +425,63 @@ export default function RestaurantPage() {
     }
   };
 
+  const getRemainingTrialTime = () => {
+    console.log('=== Debug Subscription Status ===');
+    console.log('Full restaurant data:', JSON.stringify(authRestaurant, null, 2));
+    console.log('Subscription data:', JSON.stringify(authRestaurant?.subscription, null, 2));
+    
+    if (!authRestaurant?.subscription) {
+      console.log('No subscription data found');
+      return null;
+    }
+
+    if (!authRestaurant.subscription.trialEndsAt) {
+      console.log('No trial end date found');
+      return null;
+    }
+
+    const now = new Date();
+    let trialEnd: Date;
+
+    // Handle both MongoDB date format and ISO string format
+    if (typeof authRestaurant.subscription.trialEndsAt === 'string') {
+      trialEnd = new Date(authRestaurant.subscription.trialEndsAt);
+    } else {
+      const mongoDate = authRestaurant.subscription.trialEndsAt as unknown as MongoDate;
+      if (mongoDate.$date?.$numberLong) {
+        trialEnd = new Date(parseInt(mongoDate.$date.$numberLong));
+      } else {
+        console.log('Invalid trial end date format:', authRestaurant.subscription.trialEndsAt);
+        return null;
+      }
+    }
+
+    const diff = trialEnd.getTime() - now.getTime();
+
+    console.log('Time calculations:', {
+      currentTime: now.toISOString(),
+      trialEndTime: trialEnd.toISOString(),
+      timeDifference: diff,
+      subscriptionStatus: authRestaurant.subscription.status,
+      rawTrialEndsAt: authRestaurant.subscription.trialEndsAt
+    });
+
+    if (diff <= 0) {
+      console.log('Trial has expired');
+      return null;
+    }
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    console.log('Remaining time:', { days, hours, minutes });
+    return { days, hours, minutes };
+  };
+
+  // Calculate remaining time once
+  const remainingTime = getRemainingTrialTime();
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -426,7 +501,7 @@ export default function RestaurantPage() {
       </div>
     );
   }
-
+  
   return (
     <div className="min-h-screen">
       {/* Restaurant Header */}
@@ -455,7 +530,7 @@ export default function RestaurantPage() {
       {/* Restaurant Content */}
       <main className="container mx-auto px-4 py-8">
         {/* Stats Section */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow-md p-6 text-center">
             <h3 className="text-lg font-semibold text-gray-600">{t.totalCategories}</h3>
             <p className="text-3xl font-bold text-gray-900">{stats.totalCategories}</p>
@@ -464,12 +539,10 @@ export default function RestaurantPage() {
             <h3 className="text-lg font-semibold text-gray-600">{t.totalMeals}</h3>
             <p className="text-3xl font-bold text-gray-900">{stats.totalMeals}</p>
           </div>
-          <div className="bg-white rounded-lg shadow-md p-6 text-center">
-            <h3 className="text-lg font-semibold text-gray-600">{t.accountStatus}</h3>
-            <p className={`text-3xl font-bold ${authRestaurant.active ? 'text-green-600' : 'text-yellow-600'}`}>
-              {authRestaurant.active ? t.active : t.trialPeriod}
-            </p>
-          </div>
+
+
+
+
           <div className="bg-white rounded-lg shadow-md p-6 text-center">
             <button
               onClick={() => setShowQR(true)}
@@ -480,6 +553,23 @@ export default function RestaurantPage() {
             </button>
           </div>
         </div>
+
+        <div className="bg-white rounded-lg shadow-md p-6 text-center mb-5">
+            <h3 className="text-lg font-semibold text-gray-600">{t.accountStatus}</h3>
+            {authRestaurant.subscription?.status === 'trial' && remainingTime ? (
+              <div>
+                <p className="text-2xl font-bold text-yellow-600">{t.trialPeriod}</p>
+                <div className="mt-2 text-sm text-gray-600">
+                  <p>{t.remainingDays}: {remainingTime.days}</p>
+                  <p>{t.remainingTime}: {String(remainingTime.hours).padStart(2, '0')}:{String(remainingTime.minutes).padStart(2, '0')}</p>
+                </div>
+              </div>
+            ) : authRestaurant.subscription?.status === 'active' ? (
+              <p className="text-3xl font-bold text-green-600">{t.active}</p>
+            ) : (
+              <p className="text-3xl font-bold text-red-600">{t.expired}</p>
+            )}
+          </div>
 
         {/* Restaurant Info */}
         <div className="bg-white rounded-lg shadow-md p-8">
@@ -752,7 +842,10 @@ export default function RestaurantPage() {
                       <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span className="text-gray-600">{authRestaurant.active ? t.active : t.trialPeriod}</span>
+                      <span className="text-gray-600">
+                        {authRestaurant.subscription?.status === 'trial' ? t.trialPeriod : 
+                         authRestaurant.subscription?.status === 'active' ? t.active : t.expired}
+                      </span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

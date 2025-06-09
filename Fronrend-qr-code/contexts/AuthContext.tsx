@@ -129,15 +129,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = (userData: RestaurantUser | RegularUser, token: string) => {
+  const login = async (userData: RestaurantUser | RegularUser, token: string) => {
     console.log('AuthProvider: Login called with:', { userData, token });
     
     // First update state
     if ('subdomain' in userData) {
       // This is a restaurant
-      setRestaurant(userData);
-      setUser(null);
-      localStorage.setItem('restaurant', JSON.stringify(userData));
+      try {
+        // Check and update subscription status
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/subscription`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update subscription status');
+        }
+
+        const { subscription } = await response.json();
+        const restaurantData = {
+          ...userData,
+          subscription
+        };
+
+        setRestaurant(restaurantData);
+        setUser(null);
+        localStorage.setItem('restaurant', JSON.stringify(restaurantData));
+      } catch (error) {
+        console.error('Error updating subscription:', error);
+        // If there's an error, still set the restaurant data but with existing subscription
+        setRestaurant(userData);
+        setUser(null);
+        localStorage.setItem('restaurant', JSON.stringify(userData));
+      }
     } else {
       // This is a regular user
       setUser(userData);

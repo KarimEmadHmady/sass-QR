@@ -90,8 +90,10 @@ export default function RestaurantDashboard() {
         // Calculate remaining trial days
         const trialEndsAt = new Date(restaurantData.subscription.trialEndsAt);
         const now = new Date();
-        const remainingDays = Math.ceil((trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        const trialDaysLeft = Math.max(0, remainingDays);
+        const diff = trialEndsAt.getTime() - now.getTime();
+        const remainingDays = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const remainingHours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const trialDaysLeft = remainingDays + (remainingHours > 0 ? 1 : 0);
 
         // Fetch meals
         const mealsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/meals`, {
