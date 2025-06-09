@@ -7,6 +7,10 @@ const restaurantSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  description: {
+    type: String,
+    default: ''
+  },
   email: {
     type: String,
     required: true,

@@ -14,7 +14,7 @@ router.post('/register', upload.fields([
   { name: 'banner', maxCount: 1 }
 ]), async (req, res, next) => {
   try {
-    const { name, email, password, subdomain, phone, address, settings } = req.body;
+    const { name, email, password, subdomain, phone, address, settings, description } = req.body;
     const logoUrl = req.files?.logo?.[0]?.path;
     const bannerUrl = req.files?.banner?.[0]?.path;
 
@@ -53,6 +53,7 @@ router.post('/register', upload.fields([
       subdomain: formattedSubdomain,
       phone,
       address,
+      description,
       logo: logoUrl,
       banner: bannerUrl,
       settings: settings ? JSON.parse(settings) : undefined
@@ -80,6 +81,7 @@ router.post('/register', upload.fields([
         email: restaurant.email,
         phone: restaurant.phone,
         address: restaurant.address,
+        description: restaurant.description,
         logo: restaurant.logo,
         banner: restaurant.banner,
         settings: restaurant.settings
@@ -179,7 +181,8 @@ router.put('/profile', authenticate, upload.fields([
       address, 
       settings,
       socialMedia,
-      location 
+      location,
+      description 
     } = req.body;
     const logoUrl = req.files?.logo?.[0]?.path;
     const bannerUrl = req.files?.banner?.[0]?.path;
@@ -193,6 +196,7 @@ router.put('/profile', authenticate, upload.fields([
     if (name) restaurant.name = name;
     if (phone) restaurant.phone = phone;
     if (address) restaurant.address = address;
+    if (description !== undefined) restaurant.description = description;
     if (logoUrl) restaurant.logo = logoUrl;
     if (bannerUrl) restaurant.banner = bannerUrl;
     
@@ -225,6 +229,7 @@ router.put('/profile', authenticate, upload.fields([
         name: restaurant.name,
         subdomain: restaurant.subdomain,
         email: restaurant.email,
+        description: restaurant.description,
         logo: restaurant.logo,
         banner: restaurant.banner,
         phone: restaurant.phone,
