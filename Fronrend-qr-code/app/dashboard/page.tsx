@@ -71,6 +71,101 @@ export default function RestaurantDashboard() {
       return;
     }
 
+    // const fetchData = async () => {
+    //   try {
+    //     // Fetch restaurant profile to get trial information
+    //     const restaurantRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/profile`, {
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //       },
+    //     });
+
+    //     if (!restaurantRes.ok) {
+    //       throw new Error(`Failed to fetch restaurant profile: ${restaurantRes.status}`);
+    //     }
+
+    //     const restaurantData = await restaurantRes.json();
+    //     console.log('Restaurant data:', restaurantData);
+
+    //     // Calculate remaining trial days
+    //     const trialEndsAt = new Date(restaurantData.subscription.trialEndsAt);
+    //     const now = new Date();
+    //     const diff = trialEndsAt.getTime() - now.getTime();
+    //     const remainingDays = Math.floor(diff / (1000 * 60 * 60 * 24));
+    //     const remainingHours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    //     const trialDaysLeft = remainingDays + (remainingHours > 0 ? 1 : 0);
+
+    //     // Fetch meals
+    //     const mealsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/meals`, {
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //       },
+    //     });
+
+    //     if (!mealsRes.ok) {
+    //       throw new Error(`Failed to fetch meals: ${mealsRes.status}`);
+    //     }
+
+    //     const mealsData = await mealsRes.json();
+    //     console.log('Meals data:', mealsData);
+    //     setMeals(mealsData);
+
+    //     // Fetch categories
+    //     const categoriesRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //       },
+    //     });
+
+    //     if (!categoriesRes.ok) {
+    //       throw new Error(`Failed to fetch categories: ${categoriesRes.status}`);
+    //     }
+
+    //     const categoriesData = await categoriesRes.json();
+    //     console.log('Categories data:', categoriesData);
+
+    //     // Calculate statistics
+    //     const totalMeals = mealsData.length;
+    //     const totalCategories = categoriesData.length;
+    //     const totalReviews = mealsData.reduce((acc: number, meal: Meal) => acc + (meal.reviews?.length || 0), 0);
+    //     const averageRating = mealsData.length > 0 
+    //       ? mealsData.reduce((acc: number, meal: Meal) => acc + (meal.rating || 0), 0) / mealsData.length 
+    //       : 0;
+    //     const averageMealPrice = mealsData.length > 0
+    //       ? mealsData.reduce((acc: number, meal: Meal) => acc + meal.price, 0) / mealsData.length
+    //       : 0;
+
+    //     // Update stats
+    //     setStats({
+    //       totalReviews,
+    //       totalMeals,
+    //       totalCategories,
+    //       averageMealPrice,
+    //       averageRating,
+    //       subscriptionStatus: restaurantData.subscription.status,
+    //       trialDaysLeft
+    //     });
+
+    //   } catch (error) {
+    //     console.error("Error fetching dashboard data:", error);
+    //     toast.error(language === 'ar' ? 'حدث خطأ في تحميل البيانات' : 'Error loading dashboard data');
+    //     // Set default values in case of error
+    //     setStats({
+    //       totalReviews: 0,
+    //       totalMeals: 0,
+    //       totalCategories: 0,
+    //       averageMealPrice: 0,
+    //       averageRating: 0,
+    //       subscriptionStatus: 'trial',
+    //       trialDaysLeft: 0
+    //     });
+    //     setMeals([]);
+    //   } finally {
+    //     setLoading(false);
+    //   }
+    // };
+
+  
     const fetchData = async () => {
       try {
         // Fetch restaurant profile to get trial information
@@ -79,14 +174,14 @@ export default function RestaurantDashboard() {
             Authorization: `Bearer ${token}`,
           },
         });
-
+    
         if (!restaurantRes.ok) {
           throw new Error(`Failed to fetch restaurant profile: ${restaurantRes.status}`);
         }
-
+    
         const restaurantData = await restaurantRes.json();
         console.log('Restaurant data:', restaurantData);
-
+    
         // Calculate remaining trial days
         const trialEndsAt = new Date(restaurantData.subscription.trialEndsAt);
         const now = new Date();
@@ -94,36 +189,35 @@ export default function RestaurantDashboard() {
         const remainingDays = Math.floor(diff / (1000 * 60 * 60 * 24));
         const remainingHours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const trialDaysLeft = remainingDays + (remainingHours > 0 ? 1 : 0);
-
-        // Fetch meals
-        const mealsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/meals`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
+    
+        // Fetch meals and categories in parallel
+        const [mealsRes, categoriesRes] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/meals`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+        ]);
+    
         if (!mealsRes.ok) {
           throw new Error(`Failed to fetch meals: ${mealsRes.status}`);
         }
-
-        const mealsData = await mealsRes.json();
-        console.log('Meals data:', mealsData);
-        setMeals(mealsData);
-
-        // Fetch categories
-        const categoriesRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
         if (!categoriesRes.ok) {
           throw new Error(`Failed to fetch categories: ${categoriesRes.status}`);
         }
-
+    
+        const mealsData = await mealsRes.json();
         const categoriesData = await categoriesRes.json();
+        console.log('Meals data:', mealsData);
         console.log('Categories data:', categoriesData);
-
+    
+        setMeals(mealsData);
+    
         // Calculate statistics
         const totalMeals = mealsData.length;
         const totalCategories = categoriesData.length;
@@ -134,7 +228,7 @@ export default function RestaurantDashboard() {
         const averageMealPrice = mealsData.length > 0
           ? mealsData.reduce((acc: number, meal: Meal) => acc + meal.price, 0) / mealsData.length
           : 0;
-
+    
         // Update stats
         setStats({
           totalReviews,
@@ -145,7 +239,7 @@ export default function RestaurantDashboard() {
           subscriptionStatus: restaurantData.subscription.status,
           trialDaysLeft
         });
-
+    
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
         toast.error(language === 'ar' ? 'حدث خطأ في تحميل البيانات' : 'Error loading dashboard data');
@@ -164,7 +258,9 @@ export default function RestaurantDashboard() {
         setLoading(false);
       }
     };
-
+    
+  
+  
     fetchData();
   }, [isAuthenticated, restaurant, token, router]);
 

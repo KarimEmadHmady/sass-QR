@@ -24,6 +24,7 @@ interface RestaurantUser {
   subdomain: string;
   phone?: string;
   address?: string;
+  description?: string;
   logo?: string;
   banner?: string;
   active: boolean;

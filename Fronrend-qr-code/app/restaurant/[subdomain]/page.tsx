@@ -40,6 +40,7 @@ interface Restaurant {
     };
     location: string;
   };
+  description?: string;
 }
 
 interface Category {
@@ -86,6 +87,8 @@ const translations = {
     phone: 'Phone',
     address: 'Address',
     email: 'Email',
+    description: 'Description',
+    descriptionPlaceholder: 'Enter restaurant description',
     currency: 'Currency',
     logo: 'Logo',
     banner: 'Banner',
@@ -126,6 +129,8 @@ const translations = {
     phone: 'الهاتف',
     address: 'العنوان',
     email: 'البريد الإلكتروني',
+    description: 'الوصف',
+    descriptionPlaceholder: 'أدخل وصف المطعم',
     currency: 'العملة',
     logo: 'الشعار',
     banner: 'اللافتة',
@@ -178,6 +183,24 @@ export default function RestaurantPage() {
     const fetchData = async () => {
       try {
         console.log('Fetching data for restaurant:', authRestaurant);
+
+        // Fetch updated restaurant data
+        const restaurantResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurant/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (!restaurantResponse.ok) throw new Error('Failed to fetch restaurant data');
+        const updatedRestaurant = await restaurantResponse.json();
+        console.log('Updated restaurant data:', updatedRestaurant);
+        // Update the auth context with new restaurant data
+        if (typeof window !== 'undefined') {
+          const event = new CustomEvent('restaurantUpdated', {
+            detail: updatedRestaurant
+          });
+          window.dispatchEvent(event);
+        }
+
         // Fetch categories
         const categoriesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
           headers: {
@@ -310,6 +333,7 @@ export default function RestaurantPage() {
       formData.append('name', editedRestaurant.name || '');
       formData.append('phone', editedRestaurant.phone || '');
       formData.append('address', editedRestaurant.address || '');
+      formData.append('description', editedRestaurant.description || '');
       
       // Add settings data with the updated currency
       const settings = {
@@ -335,6 +359,7 @@ export default function RestaurantPage() {
         name: editedRestaurant.name,
         phone: editedRestaurant.phone,
         address: editedRestaurant.address,
+        description: editedRestaurant.description,
         settings: settings,
         hasLogo: !!logoFile,
         hasBanner: !!bannerFile
@@ -390,6 +415,7 @@ export default function RestaurantPage() {
           name: responseData.restaurant.name,
           phone: responseData.restaurant.phone,
           address: responseData.restaurant.address,
+          description: responseData.restaurant.description,
           settings: {
             currency: responseData.restaurant.settings.currency,
             language: responseData.restaurant.settings.language,
@@ -614,6 +640,16 @@ export default function RestaurantPage() {
                     className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t.description}</label>
+                  <textarea
+                    value={editedRestaurant.description || ''}
+                    onChange={(e) => setEditedRestaurant(prev => ({ ...prev, description: e.target.value }))}
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    rows={4}
+                    placeholder={t.descriptionPlaceholder}
+                  />
+                </div>
               </div>
 
               {/* Logo Upload */}
@@ -808,6 +844,12 @@ export default function RestaurantPage() {
                       <p className="text-gray-600">{authRestaurant.email}</p>
                     </div>
                   </div>
+                  {authRestaurant.description && (
+                    <div className="mb-6">
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2">{t.description}</h4>
+                      <p className="text-gray-600 leading-relaxed">{authRestaurant.description}</p>
+                    </div>
+                  )}
                   <div className="space-y-4">
                     <div className="flex items-center space-x-3">
                       <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
