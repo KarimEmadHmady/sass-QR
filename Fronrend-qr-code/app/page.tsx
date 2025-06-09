@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from "react-hot-toast";
 import Link from "next/link";
+import RestaurantLandingPage from "@/components/RestaurantLandingPage";
 
 interface Translation {
   en: string;
@@ -66,6 +67,8 @@ const HomePage: React.FC = () => {
   const [showTapIndicator, setShowTapIndicator] = useState(true);
   const [isFirstMealShown, setIsFirstMealShown] = useState(false);
   const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(null);
+  const [hasSubdomain, setHasSubdomain] = useState<boolean>(false);
+  const [isCheckingSubdomain, setIsCheckingSubdomain] = useState(true);
 
   // Add custom styles for hiding scrollbar
   const scrollableStyle = {
@@ -97,7 +100,36 @@ const HomePage: React.FC = () => {
   );
 
   useEffect(() => {
+    const checkSubdomain = () => {
+      const hostname = window.location.hostname;
+      const parts = hostname.split('.');
+      
+      // Check for localhost subdomain (e.g., restaurant33.localhost:3000)
+      if (hostname.includes('localhost')) {
+        const subdomain = parts[0];
+        if (subdomain !== 'localhost' && subdomain !== 'www') {
+          setHasSubdomain(true);
+        } else {
+          setHasSubdomain(false);
+        }
+      } 
+      // Check for production subdomain (e.g., restaurant.example.com)
+      else if (parts.length > 2) {
+        setHasSubdomain(true);
+      } else {
+        setHasSubdomain(false);
+      }
+      
+      setIsCheckingSubdomain(false);
+    };
+
+    checkSubdomain();
+  }, []);
+
+  useEffect(() => {
     const fetchData = async () => {
+      if (!hasSubdomain) return; // Don't fetch if no subdomain
+      
       try {
         setLoading(true);
         
@@ -180,7 +212,7 @@ const HomePage: React.FC = () => {
     };
 
     fetchData();
-  }, [language]);
+  }, [language, hasSubdomain]);
 
   useEffect(() => {
     const fetchRestaurantBySubdomain = async () => {
@@ -346,6 +378,21 @@ const HomePage: React.FC = () => {
     }
   };
   
+
+  // Render logic after all hooks
+  if (isCheckingSubdomain) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#eee]">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasSubdomain) {
+    return <RestaurantLandingPage />;
+  }
 
   if (loading) {
     return (
