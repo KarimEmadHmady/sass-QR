@@ -54,7 +54,13 @@ const restaurantSchema = new mongoose.Schema({
     },
     trialEndsAt: {
       type: Date,
-      default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+      default: function() {
+        // Only set trialEndsAt if it's a new restaurant
+        if (this.isNew) {
+          return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
+        }
+        return undefined;
+      }
     },
     plan: {
       type: String,

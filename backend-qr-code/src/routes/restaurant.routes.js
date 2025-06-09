@@ -145,10 +145,22 @@ router.post('/login', async (req, res, next) => {
 // Get restaurant profile
 router.get('/profile', authenticate, async (req, res, next) => {
   try {
-    const restaurant = await Restaurant.findById(req.restaurant.id).select('-password');
+    const restaurant = await Restaurant.findById(req.restaurant.id)
+      .select('-password')
+      .lean();
     if (!restaurant) {
       return res.status(404).json({ message: 'Restaurant not found' });
     }
+    
+    // Ensure subscription data is included
+    if (!restaurant.subscription) {
+      restaurant.subscription = {
+        status: 'trial',
+        trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        plan: 'free'
+      };
+    }
+    
     res.json(restaurant);
   } catch (error) {
     next(error);
@@ -254,6 +266,33 @@ router.get('/subdomain/:subdomain', async (req, res, next) => {
     }
     
     res.json(restaurant);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Update subscription status
+router.put('/subscription', authenticate, async (req, res, next) => {
+  try {
+    const restaurant = await Restaurant.findById(req.restaurant.id);
+    if (!restaurant) {
+      return res.status(404).json({ message: 'Restaurant not found' });
+    }
+
+    // If subscription doesn't exist or trialEndsAt is not set, set it
+    if (!restaurant.subscription || !restaurant.subscription.trialEndsAt) {
+      restaurant.subscription = {
+        status: 'trial',
+        trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        plan: 'free'
+      };
+    }
+
+    await restaurant.save();
+    res.json({
+      message: 'Subscription updated successfully',
+      subscription: restaurant.subscription
+    });
   } catch (error) {
     next(error);
   }
