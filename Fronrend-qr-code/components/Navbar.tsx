@@ -30,18 +30,65 @@ export default function Navbar() {
   const router = useRouter();
   const { language } = useLanguage();
   const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(null);
+  const [hasSubdomain, setHasSubdomain] = useState(false);
 
   useEffect(() => {
     const fetchRestaurantBySubdomain = async () => {
       try {
-        // Get current subdomain from URL
+        // Get current hostname
         const hostname = window.location.hostname;
-        const subdomain = hostname.split('.')[0];
-
-        // Skip if we're on localhost or main domain
-        if (hostname === 'localhost' || !hostname.includes('.')) {
+        
+        // Special handling for localhost
+        if (hostname.includes('localhost')) {
+          const parts = hostname.split('.');
+          // If we have a subdomain before localhost (e.g., restaurant33.localhost)
+          if (parts.length > 1 && parts[0] !== 'localhost') {
+            const subdomain = parts[0];
+            setHasSubdomain(true);
+            
+            // Fetch restaurant data by subdomain
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/subdomain/${subdomain}`);
+            if (response.ok) {
+              const data = await response.json();
+              console.log('Restaurant data:', data);
+              setCurrentRestaurant(data);
+            } else {
+              console.error('Failed to fetch restaurant data');
+            }
+            return;
+          }
+          setHasSubdomain(false);
           return;
         }
+
+        // Regular domain handling
+        const parts = hostname.split('.');
+        
+        // If we have less than 2 parts, it's not a subdomain
+        if (parts.length < 2) {
+          setHasSubdomain(false);
+          return;
+        }
+
+        // Get the main domain (last two parts)
+        const mainDomain = parts.slice(-2).join('.');
+        
+        // If we're on the main domain itself
+        if (hostname === mainDomain) {
+          setHasSubdomain(false);
+          return;
+        }
+
+        // Extract subdomain (everything before the main domain)
+        const subdomain = parts.slice(0, -2).join('.');
+        
+        // If no subdomain found, return
+        if (!subdomain) {
+          setHasSubdomain(false);
+          return;
+        }
+
+        setHasSubdomain(true);
 
         // Fetch restaurant data by subdomain
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/subdomain/${subdomain}`);
@@ -203,20 +250,41 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <Link
-                href="/login"
-                className="flex items-center gap-2 bg-[#222] text-white px-2 py-1.5 md:px-4 md:py-2 rounded hover:bg-[#000] transition text-[8px] md:text-base"
-              >
-                <FaSignInAlt className="w-4 h-4 md:w-5 md:h-5" />
-                {translations.login[language]}
-              </Link>
-              <Link
-                href="/register"
-                className="flex items-center gap-2 bg-[#222] text-white px-2 py-1.5 md:px-4 md:py-2 rounded hover:bg-[#000] transition text-[10px] md:text-base"
-              >
-                <FaUserPlus className="w-4 h-4 md:w-5 md:h-5" />
-                {translations.register[language]}
-              </Link>
+              {hasSubdomain ? (
+                <>
+                  <Link
+                    href="/login"
+                    className="flex items-center gap-2 bg-[#222] text-white px-2 py-1.5 md:px-4 md:py-2 rounded hover:bg-[#000] transition text-[8px] md:text-base"
+                  >
+                    <FaSignInAlt className="w-4 h-4 md:w-5 md:h-5" />
+                    {translations.login[language]}
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="flex items-center gap-2 bg-[#222] text-white px-2 py-1.5 md:px-4 md:py-2 rounded hover:bg-[#000] transition text-[10px] md:text-base"
+                  >
+                    <FaUserPlus className="w-4 h-4 md:w-5 md:h-5" />
+                    {translations.register[language]}
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/restaurant-login"
+                    className="flex items-center gap-2 bg-[#222] text-white px-2 py-1.5 md:px-4 md:py-2 rounded hover:bg-[#000] transition text-[8px] md:text-base"
+                  >
+                    <FaSignInAlt className="w-4 h-4 md:w-5 md:h-5" />
+                    {translations.login[language]}
+                  </Link>
+                  <Link
+                    href="/restaurant-register"
+                    className="flex items-center gap-2 bg-[#222] text-white px-2 py-1.5 md:px-4 md:py-2 rounded hover:bg-[#000] transition text-[10px] md:text-base"
+                  >
+                    <FaUserPlus className="w-4 h-4 md:w-5 md:h-5" />
+                    {translations.register[language]}
+                  </Link>
+                </>
+              )}
             </>
           )}
         </div>
