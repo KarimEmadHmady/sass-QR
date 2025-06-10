@@ -48,6 +48,10 @@ interface Restaurant {
   logo: string;
   banner: string;
   subdomain: string;
+  description?: {
+    en: string;
+    ar: string;
+  };
 }
 
 const HomePage: React.FC = () => {
@@ -207,7 +211,7 @@ const HomePage: React.FC = () => {
       } catch (error) {
         console.error("Error fetching data:", error);
         setLoading(false);
-        toast.error(language === 'ar' ? 'حدث خطأ في تحميل البيانات' : 'Failed to load data');
+        toast.error(language === 'ar' ? 'لا توجد عناصر حالياً، يرجى إضافة وجبة أو صنف.' : 'No items available at the moment. Please add a meal or item.');
       }
     };
 
@@ -422,11 +426,22 @@ const HomePage: React.FC = () => {
               target.src = "/banner.webp";
             }}
           />
-          <p className="text-center text-[#222] max-w-2xl mx-auto mb-5">
-            {language === 'ar' 
-              ? "استمتع بأشهى أطباق الباستا والبيتزا الإيطالية الأصيلة، المحضّرة بعناية على يد أمهر الطهاة في قلب الزمالك."
-              : "Enjoy the most delicious authentic Italian pasta and pizza dishes, carefully prepared by skilled chefs in the heart of Zamalek."}
-          </p>
+
+            <p className="text-center text-[#222] max-w-2xl mx-auto mb-5">
+              {
+                currentRestaurant?.description && typeof currentRestaurant.description === 'object'
+                  ? (currentRestaurant.description[language] || (
+                      language === 'ar'
+                        ? "استمتع بألذ الأطعمة والمشروبات في أجواء راقية وخدمة مميزة تُرضي جميع الأذواق."
+                        : "Enjoy the finest food and drinks in an elegant atmosphere with exceptional service that suits all tastes."
+                    ))
+                  : (
+                    language === 'ar'
+                      ? "استمتع بألذ الأطعمة والمشروبات في أجواء راقية وخدمة مميزة تُرضي جميع الأذواق."
+                      : "Enjoy the finest food and drinks in an elegant atmosphere with exceptional service that suits all tastes."
+                  )
+              }
+            </p>
 
           {/* Search Bar */}
           <div className="max-w-md mx-auto relative">

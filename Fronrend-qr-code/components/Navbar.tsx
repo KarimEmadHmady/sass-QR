@@ -133,53 +133,68 @@ export default function Navbar() {
                 <div className="flex items-center gap-4">
                   <Link
                     href="/dashboard"
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 group relative"
                     title={translations.dashboard[language]}
                   >
-                    <FaUserShield />
-                    <span>{translations.dashboard[language]}</span>
+                    <FaUserShield className="w-5 h-5" />
+                    <span className="hidden md:inline">{translations.dashboard[language]}</span>
+                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap md:hidden">
+                      {translations.dashboard[language]}
+                    </span>
                   </Link>
                   <Link
                     href="/dashboard/categories"
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 group relative"
                     title={translations.categoriesManagement[language]}
                   >
-                    <FaTags />
-                    <span>{translations.categoriesManagement[language]}</span>
+                    <FaTags className="w-5 h-5" />
+                    <span className="hidden md:inline">{translations.categoriesManagement[language]}</span>
+                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap md:hidden">
+                      {translations.categoriesManagement[language]}
+                    </span>
                   </Link>
                   <Link
                     href="/dashboard/meals"
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 group relative"
                     title={translations.mealsManagement[language]}
                   >
-                    <FaUtensils />
-                    <span>{translations.mealsManagement[language]}</span>
+                    <FaUtensils className="w-5 h-5" />
+                    <span className="hidden md:inline">{translations.mealsManagement[language]}</span>
+                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap md:hidden">
+                      {translations.mealsManagement[language]}
+                    </span>
                   </Link>
                   <Link
                     href="/dashboard/meals/add"
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 group relative"
                     title={translations.addMeal[language]}
                   >
-                    <FaPlus />
-                    <span>{translations.addMeal[language]}</span>
+                    <FaPlus className="w-5 h-5" />
+                    <span className="hidden md:inline">{translations.addMeal[language]}</span>
+                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap md:hidden">
+                      {translations.addMeal[language]}
+                    </span>
                   </Link>
                   <Link
                     href={`/restaurant/${restaurant?.id}`}
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 group relative"
                     title={translations.settings[language]}
                   >
                     <FaCog className="w-5 h-5" />
-                    <span>{translations.settings[language]}</span>
+                    <span className="hidden md:inline">{translations.settings[language]}</span>
+                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap md:hidden">
+                      {translations.settings[language]}
+                    </span>
                   </Link>
                 </div>
               )}
               <div className="flex items-center gap-4">
-                <span className="text-gray-700">
+                <span className="text-gray-700 text-[14px]">
                   {translations.greeting[language]}, {restaurant ? restaurant.name : user?.name}
                 </span>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-2 bg-[#222] text-white px-4 py-2 rounded hover:bg-[#000] transition"
+                  className="flex items-center gap-2 bg-[#222] text-white px-2 py-1.5 md:px-4 md:py-2 rounded hover:bg-[#000] transition text-[10px] md:text-base"
                 >
                   <FiLogOut />
                   {translations.logout[language]}
@@ -190,16 +205,16 @@ export default function Navbar() {
             <>
               <Link
                 href="/login"
-                className="flex items-center gap-2 bg-[#222] text-white px-4 py-2 rounded hover:bg-[#000] transition"
+                className="flex items-center gap-2 bg-[#222] text-white px-2 py-1.5 md:px-4 md:py-2 rounded hover:bg-[#000] transition text-[8px] md:text-base"
               >
-                <FaSignInAlt />
+                <FaSignInAlt className="w-4 h-4 md:w-5 md:h-5" />
                 {translations.login[language]}
               </Link>
               <Link
                 href="/register"
-                className="flex items-center gap-2 bg-[#222] text-white px-4 py-2 rounded hover:bg-[#000] transition"
+                className="flex items-center gap-2 bg-[#222] text-white px-2 py-1.5 md:px-4 md:py-2 rounded hover:bg-[#000] transition text-[10px] md:text-base"
               >
-                <FaUserPlus />
+                <FaUserPlus className="w-4 h-4 md:w-5 md:h-5" />
                 {translations.register[language]}
               </Link>
             </>

@@ -92,7 +92,7 @@ export default function RestaurantLoginPage() {
   const translations = {
     welcomeBack: {
       en: "Welcome Back Restaurant Owner",
-      ar: "مرحباً بعودتك صاحب المطعم"
+      ar: "مرحباً بعودتك"
     },
     email: {
       en: "Email",

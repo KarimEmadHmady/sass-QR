@@ -18,6 +18,7 @@ interface RegularUser {
 
 // شكل بيانات المطعم
 interface RestaurantUser {
+  _id: string;
   id: string;
   name: string;
   email: string;

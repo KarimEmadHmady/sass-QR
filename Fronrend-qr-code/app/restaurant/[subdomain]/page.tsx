@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useSubdomain } from '@/contexts/SubdomainContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -16,6 +16,7 @@ interface MongoDate {
 }
 
 interface Restaurant {
+  _id: string;
   id: string;
   name: string;
   subdomain: string;
@@ -40,8 +41,16 @@ interface Restaurant {
     };
     location: string;
   };
-  description?: string;
+  description?: {
+    en: string;
+    ar: string;
+  };
 }
+
+type DescriptionType = {
+  en: string;
+  ar: string;
+};
 
 interface Category {
   id: string;
@@ -57,6 +66,13 @@ interface Category {
   meals: Meal[];
 }
 
+interface Review {
+  _id: string;
+  rating: number;
+  comment: string;
+  user: string;
+}
+
 interface Meal {
   id: string;
   name: {
@@ -70,6 +86,7 @@ interface Meal {
   price: number;
   image?: string;
   category: string;
+  reviews: Review[];
 }
 
 const translations = {
@@ -159,6 +176,14 @@ const translations = {
   }
 };
 
+// Helper to always get description as object
+function getDescriptionObj(desc: string | { en: string; ar: string; } | undefined): { en: string; ar: string } {
+  if (typeof desc === 'object' && desc !== null && 'en' in desc && 'ar' in desc) {
+    return desc;
+  }
+  return { en: '', ar: '' };
+}
+
 export default function RestaurantPage() {
   const params = useParams();
   const { subdomain } = useSubdomain();
@@ -178,78 +203,177 @@ export default function RestaurantPage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [showQR, setShowQR] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+
     const fetchData = async () => {
+      if (!token || !authRestaurant) {
+        console.log('No auth data, redirecting to login');
+        router.push('/restaurant-login');
+        return;
+      }
+
       try {
+        setLoading(true);
         console.log('Fetching data for restaurant:', authRestaurant);
 
         // Fetch updated restaurant data
-        const restaurantResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurant/me`, {
+        const restaurantResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
-          }
+          },
+          signal: controller.signal
         });
-        if (!restaurantResponse.ok) throw new Error('Failed to fetch restaurant data');
+
+        if (!isMounted) return;
+
+        if (restaurantResponse.status === 401) {
+          console.log('Token expired or invalid, redirecting to login');
+          toast.error(language === 'ar' ? 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.' : 'Session expired. Please login again.');
+          router.push('/restaurant-login');
+          return;
+        }
+
+        if (!restaurantResponse.ok) {
+          throw new Error('Failed to fetch restaurant data');
+        }
+
         const updatedRestaurant = await restaurantResponse.json();
         console.log('Updated restaurant data:', updatedRestaurant);
+        
         // Update the auth context with new restaurant data
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && isMounted) {
           const event = new CustomEvent('restaurantUpdated', {
             detail: updatedRestaurant
           });
           window.dispatchEvent(event);
         }
 
-        // Fetch categories
-        const categoriesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        // Fetch meals and categories in parallel
+        const [mealsResponse, categoriesResponse] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/meals`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            signal: controller.signal
+          }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            signal: controller.signal
+          })
+        ]);
+
+        if (!isMounted) return;
+
+        if (mealsResponse.status === 401 || categoriesResponse.status === 401) {
+          console.log('Token expired or invalid during data fetch, redirecting to login');
+          toast.error(language === 'ar' ? 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.' : 'Session expired. Please login again.');
+          router.push('/restaurant-login');
+          return;
+        }
+
+        if (!mealsResponse.ok) throw new Error('Failed to fetch meals');
         if (!categoriesResponse.ok) throw new Error('Failed to fetch categories');
+
+        const mealsData = await mealsResponse.json();
         const categoriesData = await categoriesResponse.json();
+
+        if (!isMounted) return;
+
+        console.log('Received meals data:', mealsData);
         console.log('Received categories data:', categoriesData);
 
-        // Fetch meals
-        const mealsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/meals`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        if (!mealsResponse.ok) throw new Error('Failed to fetch meals');
-        const mealsData = await mealsResponse.json();
-        console.log('Received meals data:', mealsData);
-
-        // Organize meals by category
-        const categoriesWithMeals = categoriesData.map((category: Category) => ({
-          ...category,
-          meals: mealsData.filter((meal: Meal) => meal.category === category.id)
+        // Transform the data with proper typing
+        const transformedMeals: Meal[] = mealsData.map((meal: any) => ({
+          id: meal._id,
+          name: {
+            en: meal.name?.en || '',
+            ar: meal.name?.ar || ''
+          },
+          description: {
+            en: meal.description?.en || '',
+            ar: meal.description?.ar || ''
+          },
+          price: meal.price || 0,
+          image: meal.image || '',
+          category: meal.category?._id || '',
+          reviews: meal.reviews || []
         }));
 
-        setCategories(categoriesWithMeals);
-        setStats({
-          totalCategories: categoriesData.length,
-          totalMeals: mealsData.length
-        });
+        const transformedCategories: Category[] = categoriesData.map((category: any) => ({
+          id: category._id,
+          name: {
+            en: category.name?.en || '',
+            ar: category.name?.ar || ''
+          },
+          description: category.description ? {
+            en: category.description.en || '',
+            ar: category.description.ar || ''
+          } : undefined,
+          image: category.image || '',
+          meals: transformedMeals.filter(meal => meal.category === category._id)
+        }));
+
+        if (isMounted) {
+          setCategories(transformedCategories);
+          setStats({
+            totalCategories: transformedCategories.length,
+            totalMeals: transformedMeals.length
+          });
+        }
       } catch (error) {
+        if (!isMounted) return;
+        
         console.error('Error fetching data:', error);
+        if (error instanceof Error) {
+          if (error.name === 'AbortError') {
+            console.log('Fetch aborted');
+            return;
+          }
+          if (error.message.includes('Failed to fetch')) {
+            toast.error(language === 'ar' ? 'فشل في الاتصال بالخادم. يرجى المحاولة مرة أخرى.' : 'Failed to connect to server. Please try again.');
+          } else {
+            toast.error(error.message);
+          }
+        } else {
+          toast.error(language === 'ar' ? 'لا توجد عناصر حالياً، يرجى إضافة وجبة أو صنف.' : 'No items available at the moment. Please add a meal or item.');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
-    if (authRestaurant && token) {
-      fetchData();
+    fetchData();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [token, language, router]);
+
+  // Add a separate effect to handle authRestaurant changes
+  useEffect(() => {
+    if (!authRestaurant && token) {
+      console.log('No restaurant data, redirecting to login');
+      router.push('/restaurant-login');
     }
-  }, [authRestaurant, token]);
+  }, [authRestaurant, token, router]);
 
   const handleEdit = () => {
     if (authRestaurant) {
+      const description = getDescriptionObj(authRestaurant.description as any);
       setEditedRestaurant({
         name: authRestaurant.name,
         phone: authRestaurant.phone || '',
         address: authRestaurant.address || '',
+        description,
         settings: {
           currency: authRestaurant.settings.currency,
           language: authRestaurant.settings.language,
@@ -323,17 +447,28 @@ export default function RestaurantPage() {
 
   const handleSave = async () => {
     try {
-      if (!token || !authRestaurant?.id) {
-        console.error('No authentication token or restaurant ID available');
-        toast.error(t.authenticationError);
+      // Check authentication
+      if (!token) {
+        console.log('No token found, redirecting to login');
+        toast.error(language === 'ar' ? 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.' : 'Session expired. Please login again.');
+        router.push('/restaurant-login');
         return;
       }
+
+      if (!authRestaurant?._id) {
+        console.log('No restaurant ID found');
+        toast.error(language === 'ar' ? 'لم يتم العثور على بيانات المطعم. يرجى تسجيل الدخول مرة أخرى.' : 'Restaurant data not found. Please login again.');
+        router.push('/restaurant-login');
+        return;
+      }
+
+      setLoading(true);
 
       const formData = new FormData();
       formData.append('name', editedRestaurant.name || '');
       formData.append('phone', editedRestaurant.phone || '');
       formData.append('address', editedRestaurant.address || '');
-      formData.append('description', editedRestaurant.description || '');
+      formData.append('description', JSON.stringify(getDescriptionObj(editedRestaurant.description ?? { en: '', ar: '' })));
       
       // Add settings data with the updated currency
       const settings = {
@@ -376,6 +511,13 @@ export default function RestaurantPage() {
       console.log('Response status:', response.status);
       const responseData = await response.json();
       console.log('Response data:', responseData);
+
+      if (response.status === 401) {
+        console.log('Token expired during save, redirecting to login');
+        toast.error(language === 'ar' ? 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.' : 'Session expired. Please login again.');
+        router.push('/restaurant-login');
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(responseData.message || t.profileUpdateError);
@@ -435,6 +577,8 @@ export default function RestaurantPage() {
       } else {
         toast.error(t.profileUpdateError);
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -642,13 +786,51 @@ export default function RestaurantPage() {
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">{t.description}</label>
-                  <textarea
-                    value={editedRestaurant.description || ''}
-                    onChange={(e) => setEditedRestaurant(prev => ({ ...prev, description: e.target.value }))}
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    rows={4}
-                    placeholder={t.descriptionPlaceholder}
-                  />
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">English</label>
+                      <textarea
+                        value={getDescriptionObj(editedRestaurant.description).en}
+                        onChange={(e) => {
+                          setEditedRestaurant(prev => {
+                            const prevDesc = getDescriptionObj(prev.description);
+                            return {
+                              ...prev,
+                              description: {
+                                en: e.target.value,
+                                ar: prevDesc.ar
+                              }
+                            };
+                          });
+                        }}
+                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        rows={4}
+                        placeholder="Enter description in English"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">العربية</label>
+                      <textarea
+                        value={getDescriptionObj(editedRestaurant.description).ar}
+                        onChange={(e) => {
+                          setEditedRestaurant(prev => {
+                            const prevDesc = getDescriptionObj(prev.description);
+                            return {
+                              ...prev,
+                              description: {
+                                en: prevDesc.en,
+                                ar: e.target.value
+                              }
+                            };
+                          });
+                        }}
+                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        rows={4}
+                        placeholder="أدخل الوصف بالعربية"
+                        dir="rtl"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -847,7 +1029,9 @@ export default function RestaurantPage() {
                   {authRestaurant.description && (
                     <div className="mb-6">
                       <h4 className="text-lg font-semibold text-gray-900 mb-2">{t.description}</h4>
-                      <p className="text-gray-600 leading-relaxed">{authRestaurant.description}</p>
+                      <p className="text-gray-600 leading-relaxed">
+                        {getDescriptionObj(authRestaurant.description)[language as 'en' | 'ar']}
+                      </p>
                     </div>
                   )}
                   <div className="space-y-4">
