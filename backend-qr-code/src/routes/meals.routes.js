@@ -3,6 +3,7 @@ import { getMeals, createMeal, getMealById, updateMeal, deleteMeal, addReview, u
 import multer from '../utils/cloudinary.js';
 import { authenticate } from '../middleware/auth.js';
 import { authenticateRestaurantToken } from '../middleware/restaurantAuth.js';
+import { requireActiveSubscription } from '../middleware/subscriptionCheck.js';
 import Meal from '../models/Meal.js';
 import Restaurant from '../models/Restaurant.js';
 
@@ -35,19 +36,16 @@ router.get('/restaurant/:subdomain', async (req, res) => {
   }
 });
 
-
-
-
 // Protected routes (auth required)
 router.get('/', authenticateRestaurantToken, getMeals);
 router.get('/:id', authenticateRestaurantToken, getMealById);
-router.post('/', authenticate, multer.single('image'), createMeal);
-router.put('/:id', authenticate, multer.single('image'), updateMeal);
-router.delete('/:id', authenticate, deleteMeal);
+router.post('/', authenticate, requireActiveSubscription, multer.single('image'), createMeal);
+router.put('/:id', authenticate, requireActiveSubscription, multer.single('image'), updateMeal);
+router.delete('/:id', authenticate, requireActiveSubscription, deleteMeal);
 
 // Review routes
 router.post('/:id/reviews', authenticate, addReview);
-router.put('/:mealId/reviews/:reviewId', authenticateRestaurantToken, updateReview);
-router.delete('/:mealId/reviews/:reviewId', authenticate, deleteReview);
+router.put('/:mealId/reviews/:reviewId', authenticateRestaurantToken, requireActiveSubscription, updateReview);
+router.delete('/:mealId/reviews/:reviewId', authenticate, requireActiveSubscription, deleteReview);
 
 export default router;

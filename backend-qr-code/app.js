@@ -11,6 +11,9 @@ import { errorHandler } from './src/middleware/errorHandler.js';
 import { authenticateRestaurant } from './src/middleware/restaurantAuth.js';
 import { subdomainMiddleware } from './src/middleware/subdomain.js';
 import { connectDB } from './src/config/db.js';
+import { checkSubscriptionStatus , requireActiveSubscription } from './src/middleware/subscriptionCheck.js';
+
+
 
 dotenv.config();
 
@@ -23,9 +26,14 @@ app.use(express.urlencoded({ extended: true }));
 
 connectDB();
 
+
+
 // Public routes (no restaurant context needed)
 app.use('/api/restaurants', restaurantRoutes);
 app.use('/api/auth', authRoutes);
+
+app.use(checkSubscriptionStatus);
+app.use(requireActiveSubscription);
 
 // Public routes that need subdomain but no auth
 app.use('/api/categories', categoryRoutes);

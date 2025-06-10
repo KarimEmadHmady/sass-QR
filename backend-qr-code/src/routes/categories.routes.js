@@ -3,6 +3,7 @@ import { getCategories, createCategory, getCategoryById, updateCategory, deleteC
 import multer from '../utils/cloudinary.js';
 import { authenticate } from '../middleware/auth.js';
 import { authenticateRestaurantToken } from '../middleware/restaurantAuth.js';
+import { requireActiveSubscription } from '../middleware/subscriptionCheck.js';
 import Category from '../models/Category.js';
 import Restaurant from '../models/Restaurant.js';
 
@@ -36,8 +37,8 @@ router.get('/restaurant/:subdomain', async (req, res) => {
 // Protected routes (auth required)
 router.get('/', authenticateRestaurantToken, getCategories);
 router.get('/:id', authenticateRestaurantToken, getCategoryById);
-router.post('/', authenticate, multer.single('image'), createCategory);
-router.put('/:id', authenticate, multer.single('image'), updateCategory);
-router.delete('/:id', authenticate, deleteCategory);
+router.post('/', authenticate, requireActiveSubscription, multer.single('image'), createCategory);
+router.put('/:id', authenticate, requireActiveSubscription, multer.single('image'), updateCategory);
+router.delete('/:id', authenticate, requireActiveSubscription, deleteCategory);
 
 export default router;
