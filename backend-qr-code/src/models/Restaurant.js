@@ -8,8 +8,14 @@ const restaurantSchema = new mongoose.Schema({
     trim: true
   },
   description: {
-    type: String,
-    default: ''
+    en: {
+      type: String,
+      default: ''
+    },
+    ar: {
+      type: String,
+      default: ''
+    }
   },
   email: {
     type: String,

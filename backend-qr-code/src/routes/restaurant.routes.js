@@ -196,7 +196,13 @@ router.put('/profile', authenticate, upload.fields([
     if (name) restaurant.name = name;
     if (phone) restaurant.phone = phone;
     if (address) restaurant.address = address;
-    if (description !== undefined) restaurant.description = description;
+    if (description !== undefined) {
+      const parsedDescription = JSON.parse(description);
+      restaurant.description = {
+        en: parsedDescription.en || '',
+        ar: parsedDescription.ar || ''
+      };
+    }
     if (logoUrl) restaurant.logo = logoUrl;
     if (bannerUrl) restaurant.banner = bannerUrl;
     
