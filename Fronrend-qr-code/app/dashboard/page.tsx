@@ -64,6 +64,7 @@ export default function RestaurantDashboard() {
     trialDaysLeft: 0
   });
   const [loading, setLoading] = useState(true);
+  const [showSubscriptionWarning, setShowSubscriptionWarning] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated || !restaurant) {
@@ -71,101 +72,6 @@ export default function RestaurantDashboard() {
       return;
     }
 
-    // const fetchData = async () => {
-    //   try {
-    //     // Fetch restaurant profile to get trial information
-    //     const restaurantRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/profile`, {
-    //       headers: {
-    //         Authorization: `Bearer ${token}`,
-    //       },
-    //     });
-
-    //     if (!restaurantRes.ok) {
-    //       throw new Error(`Failed to fetch restaurant profile: ${restaurantRes.status}`);
-    //     }
-
-    //     const restaurantData = await restaurantRes.json();
-    //     console.log('Restaurant data:', restaurantData);
-
-    //     // Calculate remaining trial days
-    //     const trialEndsAt = new Date(restaurantData.subscription.trialEndsAt);
-    //     const now = new Date();
-    //     const diff = trialEndsAt.getTime() - now.getTime();
-    //     const remainingDays = Math.floor(diff / (1000 * 60 * 60 * 24));
-    //     const remainingHours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    //     const trialDaysLeft = remainingDays + (remainingHours > 0 ? 1 : 0);
-
-    //     // Fetch meals
-    //     const mealsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/meals`, {
-    //       headers: {
-    //         Authorization: `Bearer ${token}`,
-    //       },
-    //     });
-
-    //     if (!mealsRes.ok) {
-    //       throw new Error(`Failed to fetch meals: ${mealsRes.status}`);
-    //     }
-
-    //     const mealsData = await mealsRes.json();
-    //     console.log('Meals data:', mealsData);
-    //     setMeals(mealsData);
-
-    //     // Fetch categories
-    //     const categoriesRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
-    //       headers: {
-    //         Authorization: `Bearer ${token}`,
-    //       },
-    //     });
-
-    //     if (!categoriesRes.ok) {
-    //       throw new Error(`Failed to fetch categories: ${categoriesRes.status}`);
-    //     }
-
-    //     const categoriesData = await categoriesRes.json();
-    //     console.log('Categories data:', categoriesData);
-
-    //     // Calculate statistics
-    //     const totalMeals = mealsData.length;
-    //     const totalCategories = categoriesData.length;
-    //     const totalReviews = mealsData.reduce((acc: number, meal: Meal) => acc + (meal.reviews?.length || 0), 0);
-    //     const averageRating = mealsData.length > 0 
-    //       ? mealsData.reduce((acc: number, meal: Meal) => acc + (meal.rating || 0), 0) / mealsData.length 
-    //       : 0;
-    //     const averageMealPrice = mealsData.length > 0
-    //       ? mealsData.reduce((acc: number, meal: Meal) => acc + meal.price, 0) / mealsData.length
-    //       : 0;
-
-    //     // Update stats
-    //     setStats({
-    //       totalReviews,
-    //       totalMeals,
-    //       totalCategories,
-    //       averageMealPrice,
-    //       averageRating,
-    //       subscriptionStatus: restaurantData.subscription.status,
-    //       trialDaysLeft
-    //     });
-
-    //   } catch (error) {
-    //     console.error("Error fetching dashboard data:", error);
-    //     toast.error(language === 'ar' ? 'حدث خطأ في تحميل البيانات' : 'Error loading dashboard data');
-    //     // Set default values in case of error
-    //     setStats({
-    //       totalReviews: 0,
-    //       totalMeals: 0,
-    //       totalCategories: 0,
-    //       averageMealPrice: 0,
-    //       averageRating: 0,
-    //       subscriptionStatus: 'trial',
-    //       trialDaysLeft: 0
-    //     });
-    //     setMeals([]);
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
-
-  
     const fetchData = async () => {
       try {
         // Fetch restaurant profile to get trial information
@@ -189,6 +95,11 @@ export default function RestaurantDashboard() {
         const remainingDays = Math.floor(diff / (1000 * 60 * 60 * 24));
         const remainingHours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const trialDaysLeft = remainingDays + (remainingHours > 0 ? 1 : 0);
+
+        // Check subscription status
+        if (restaurantData.subscription.status === 'expired') {
+          setShowSubscriptionWarning(true);
+        }
     
         // Fetch meals and categories in parallel
         const [mealsRes, categoriesRes] = await Promise.all([
@@ -213,8 +124,6 @@ export default function RestaurantDashboard() {
     
         const mealsData = await mealsRes.json();
         const categoriesData = await categoriesRes.json();
-        console.log('Meals data:', mealsData);
-        console.log('Categories data:', categoriesData);
     
         setMeals(mealsData);
     
@@ -243,7 +152,6 @@ export default function RestaurantDashboard() {
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
         toast.error(language === 'ar' ? 'حدث خطأ في تحميل البيانات' : 'Error loading dashboard data');
-        // Set default values in case of error
         setStats({
           totalReviews: 0,
           totalMeals: 0,
@@ -259,8 +167,6 @@ export default function RestaurantDashboard() {
       }
     };
     
-  
-  
     fetchData();
   }, [isAuthenticated, restaurant, token, router]);
 
@@ -381,6 +287,29 @@ export default function RestaurantDashboard() {
     <div className="min-h-screen bg-[#eee] p-4 sm:p-8 relative">
       <AnimatedBackground />
       <div className="max-w-6xl mx-auto space-y-8">
+        {/* Subscription Warning */}
+        {showSubscriptionWarning && (
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6" role="alert">
+            <div className="flex items-center">
+              <div className="py-1">
+                <svg className="h-6 w-6 text-red-500 mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-bold">
+                  {language === 'ar' ? 'انتهت الفترة التجريبية' : 'Trial Period Expired'}
+                </p>
+                <p className="text-sm">
+                  {language === 'ar' 
+                    ? 'يرجى الاشتراك للاستمرار في استخدام الخدمة' 
+                    : 'Please subscribe to continue using the service'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 

@@ -203,6 +203,7 @@ export default function RestaurantPage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [showQR, setShowQR] = useState(false);
+  const [showSubscriptionWarning, setShowSubscriptionWarning] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -243,6 +244,11 @@ export default function RestaurantPage() {
 
         const updatedRestaurant = await restaurantResponse.json();
         console.log('Updated restaurant data:', updatedRestaurant);
+
+        // Check subscription status
+        if (updatedRestaurant.subscription?.status === 'expired') {
+          setShowSubscriptionWarning(true);
+        }
         
         // Update the auth context with new restaurant data
         if (typeof window !== 'undefined' && isMounted) {
@@ -699,6 +705,29 @@ export default function RestaurantPage() {
 
       {/* Restaurant Content */}
       <main className="container mx-auto px-4 py-8">
+        {/* Subscription Warning */}
+        {showSubscriptionWarning && (
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6" role="alert">
+            <div className="flex items-center">
+              <div className="py-1">
+                <svg className="h-6 w-6 text-red-500 mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-bold">
+                  {language === 'ar' ? 'انتهت الفترة التجريبية' : 'Trial Period Expired'}
+                </p>
+                <p className="text-sm">
+                  {language === 'ar' 
+                    ? 'يرجى الاشتراك للاستمرار في استخدام الخدمة' 
+                    : 'Please subscribe to continue using the service'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Stats Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow-md p-6 text-center">
@@ -709,9 +738,6 @@ export default function RestaurantPage() {
             <h3 className="text-lg font-semibold text-gray-600">{t.totalMeals}</h3>
             <p className="text-3xl font-bold text-gray-900">{stats.totalMeals}</p>
           </div>
-
-
-
 
           <div className="bg-white rounded-lg shadow-md p-6 text-center">
             <button
