@@ -37,8 +37,9 @@ router.get('/restaurant/:subdomain', async (req, res) => {
 });
 
 // Protected routes (auth required)
-router.get('/', authenticateRestaurantToken, getMeals);
-router.get('/:id', authenticateRestaurantToken, getMealById);
+router.get('/', authenticateRestaurantToken, requireActiveSubscription, getMeals);
+router.get('/:id', authenticateRestaurantToken, requireActiveSubscription, getMealById);
+
 router.post('/', authenticate, requireActiveSubscription, multer.single('image'), createMeal);
 router.put('/:id', authenticate, requireActiveSubscription, multer.single('image'), updateMeal);
 router.delete('/:id', authenticate, requireActiveSubscription, deleteMeal);
