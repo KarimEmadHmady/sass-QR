@@ -30,7 +30,7 @@ const LanguageSwitcher: React.FC = () => {
   return (
     <button
       onClick={toggleLanguage}
-      className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-lg hover:bg-white/20 transition-colors"
+      className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-lg hover:bg-white/20 transition-colors cursor-pointer"
     >
       <LanguageIcon />
       <span className="text-sm font-medium">

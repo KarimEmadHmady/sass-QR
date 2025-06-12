@@ -12,6 +12,7 @@ import {
   FaPlus,
   FaTags,
   FaCog,
+  FaBars,
 } from "react-icons/fa";
 import Image from "next/image";
 import { FiLogOut } from "react-icons/fi";
@@ -31,6 +32,7 @@ export default function Navbar() {
   const { language } = useLanguage();
   const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(null);
   const [hasSubdomain, setHasSubdomain] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const fetchRestaurantBySubdomain = async () => {
@@ -153,7 +155,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="shadow-sm p-4">
+    <nav className=" p-4 bg-transition">
       <div className="container mx-auto flex justify-between items-center">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2">
@@ -177,17 +179,16 @@ export default function Navbar() {
           {isAuthenticated ? (
             <>
               {restaurant && (
-                <div className="flex items-center gap-4">
+                <>
+                  {/* Desktop Navigation */}
+                  <div className="hidden md:flex items-center gap-4">
                   <Link
                     href="/dashboard"
                     className="flex items-center gap-2 text-gray-600 hover:text-gray-900 group relative"
                     title={translations.dashboard[language]}
                   >
                     <FaUserShield className="w-5 h-5" />
-                    <span className="hidden md:inline">{translations.dashboard[language]}</span>
-                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap md:hidden">
-                      {translations.dashboard[language]}
-                    </span>
+                      <span>{translations.dashboard[language]}</span>
                   </Link>
                   <Link
                     href="/dashboard/categories"
@@ -195,10 +196,7 @@ export default function Navbar() {
                     title={translations.categoriesManagement[language]}
                   >
                     <FaTags className="w-5 h-5" />
-                    <span className="hidden md:inline">{translations.categoriesManagement[language]}</span>
-                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap md:hidden">
-                      {translations.categoriesManagement[language]}
-                    </span>
+                      <span>{translations.categoriesManagement[language]}</span>
                   </Link>
                   <Link
                     href="/dashboard/meals"
@@ -206,10 +204,7 @@ export default function Navbar() {
                     title={translations.mealsManagement[language]}
                   >
                     <FaUtensils className="w-5 h-5" />
-                    <span className="hidden md:inline">{translations.mealsManagement[language]}</span>
-                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap md:hidden">
-                      {translations.mealsManagement[language]}
-                    </span>
+                      <span>{translations.mealsManagement[language]}</span>
                   </Link>
                   <Link
                     href="/dashboard/meals/add"
@@ -217,10 +212,7 @@ export default function Navbar() {
                     title={translations.addMeal[language]}
                   >
                     <FaPlus className="w-5 h-5" />
-                    <span className="hidden md:inline">{translations.addMeal[language]}</span>
-                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap md:hidden">
-                      {translations.addMeal[language]}
-                    </span>
+                      <span>{translations.addMeal[language]}</span>
                   </Link>
                   <Link
                     href={`/restaurant/${restaurant?.id}`}
@@ -228,15 +220,83 @@ export default function Navbar() {
                     title={translations.settings[language]}
                   >
                     <FaCog className="w-5 h-5" />
-                    <span className="hidden md:inline">{translations.settings[language]}</span>
-                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap md:hidden">
-                      {translations.settings[language]}
-                    </span>
+                      <span>{translations.settings[language]}</span>
+                    </Link>
+                  </div>
+
+                  {/* Mobile Menu Button */}
+                  <button
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    className="md:hidden flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                  >
+                    <FaBars className="w-6 h-6" />
+                  </button>
+
+                  {/* Mobile Menu Dropdown */}
+                  {isMobileMenuOpen && (
+                    <div className="fixed inset-0 backdrop-blur-xs bg-opacity-50 z-50 md:hidden">
+                      <div className="absolute top-0 right-0 h-full w-64 bg-white shadow-lg">
+                        <div className="p-4">
+                          <div className="flex justify-end">
+                            <button
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className="text-gray-600 hover:text-gray-900"
+                            >
+                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                          <div className="mt-4 flex flex-col gap-4">
+                            <Link
+                              href="/dashboard"
+                              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              <FaUserShield className="w-5 h-5" />
+                              <span>{translations.dashboard[language]}</span>
+                            </Link>
+                            <Link
+                              href="/dashboard/categories"
+                              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              <FaTags className="w-5 h-5" />
+                              <span>{translations.categoriesManagement[language]}</span>
+                            </Link>
+                            <Link
+                              href="/dashboard/meals"
+                              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              <FaUtensils className="w-5 h-5" />
+                              <span>{translations.mealsManagement[language]}</span>
+                            </Link>
+                            <Link
+                              href="/dashboard/meals/add"
+                              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              <FaPlus className="w-5 h-5" />
+                              <span>{translations.addMeal[language]}</span>
+                            </Link>
+                            <Link
+                              href={`/restaurant/${restaurant?.id}`}
+                              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              <FaCog className="w-5 h-5" />
+                              <span>{translations.settings[language]}</span>
                   </Link>
                 </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
               <div className="flex items-center gap-4">
-                <span className="text-gray-700 text-[14px]">
+                <span className="text-gray-700 text-[12px] text-center">
                   {translations.greeting[language]}, {restaurant ? restaurant.name : user?.name}
                 </span>
                 <button

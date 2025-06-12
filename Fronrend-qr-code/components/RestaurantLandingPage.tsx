@@ -3,6 +3,9 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import Link from "next/link";
 import { FaQrcode, FaChartLine, FaUsers, FaMobileAlt, FaShieldAlt, FaClock, FaCheck, FaUtensils, FaBell, FaStar, FaGlobe, FaCog } from 'react-icons/fa';
+import { SiGoogle } from 'react-icons/si';
+import AnimatedBackground from "./AnimatedBackground";
+import SystemPreviewSlider from "./SystemPreviewSlider";
 
 const translations = {
   en: {
@@ -55,9 +58,9 @@ const translations = {
           description: "Organize your menu with beautiful categories"
         },
         {
-          icon: <FaBell className="w-8 h-8" />,
-          title: "Instant Notifications",
-          description: "Get notified when customers place orders"
+          icon: <SiGoogle className="w-8 h-8" />,
+          title: "Google Reviews",
+          description: "Direct integration with Google reviews"
         },
         {
           icon: <FaStar className="w-8 h-8" />,
@@ -98,28 +101,29 @@ const translations = {
           cta: "Start Free Trial"
         },
         {
-          name: "Basic",
-          price: "99",
+          name: "Monthly Plan",
+          price: "499",
           duration: "per month",
           features: [
-            "Everything in Free Trial",
-            "Unlimited menu items",
-            "Advanced analytics",
-            "Customer reviews",
-            "Priority support"
+            "Unlimited categories and items",
+            "Full control (No technical skills needed)",
+            "Customer ratings system",
+            "QR code generation",
+            "Complete analytics dashboard",
+            "Custom subdomain",
+            "Continuous technical support"
           ],
           cta: "Get Started"
         },
         {
-          name: "Premium",
-          price: "199",
-          duration: "per month",
+          name: "Annual Plan",
+          price: "4999",
+          duration: "per year",
           features: [
-            "Everything in Basic",
-            "Custom domain",
-            "White-label solution",
-            "API access",
-            "Dedicated support"
+            "All Monthly Plan features",
+            "Priority technical support",
+            "Save 2 months worth of fees",
+            "Long-term commitment discount"
           ],
           cta: "Get Started"
         }
@@ -127,9 +131,13 @@ const translations = {
     },
     cta: {
       title: "Ready to Go Digital?",
-      subtitle: "Join 1000+ restaurants already using our platform",
+      subtitle: "Join many restaurants and cafés that trust and use our platform daily",
       button: "Start Free Trial"
-    }
+    },
+    systemPreview: {
+      title: "Explore MenuTag System",
+      subtitle: "See how the system looks from the inside – simple design, full control, and comfort for your customers.",
+    },
   },
   ar: {
     hero: {
@@ -181,9 +189,9 @@ const translations = {
           description: "نظم قائمتك مع تصنيفات جميلة"
         },
         {
-          icon: <FaBell className="w-8 h-8" />,
-          title: "إشعارات فورية",
-          description: "احصل على إشعارات عند طلب العملاء"
+          icon: <SiGoogle className="w-8 h-8" />,
+          title: "تقييم جوجل",
+          description: "تقييم العملاء لمطعمك بضغطة واحدة "
         },
         {
           icon: <FaStar className="w-8 h-8" />,
@@ -224,28 +232,29 @@ const translations = {
           cta: "ابدأ تجربة مجانية"
         },
         {
-          name: "الأساسي",
-          price: "99",
+          name: "الباقة الشهرية",
+          price: "499",
           duration: "شهرياً",
           features: [
-            "كل مميزات التجربة المجانية",
-            "عناصر قائمة غير محدودة",
-            "تحليلات متقدمة",
-            "تقييمات العملاء",
-            "دعم ذو أولوية"
+            "إضافة تصنيفات وأصناف بلا حدود",
+            "تحكم كامل (بدون خبرة تقنية)",
+            "نظام تقييمات العملاء",
+            "إنشاء رمز QR",
+            "لوحة تحليلات شاملة",
+            "نطاق فرعي مخصص",
+            "دعم فني مستمر"
           ],
           cta: "ابدأ الآن"
         },
         {
-          name: "الاحترافي",
-          price: "199",
-          duration: "شهرياً",
+          name: "الباقة السنوية",
+          price: "4999",
+          duration: "سنوياً",
           features: [
-            "كل مميزات الخطة الأساسية",
-            "نطاق فرعي مخصص",
-            "حل white-label",
-            "وصول API",
-            "دعم مخصص"
+            "كل مميزات الباقة الشهرية",
+            "أولوية في الدعم الفني",
+            "توفير رسوم شهرين",
+            "خصم الالتزام طويل الأمد"
           ],
           cta: "ابدأ الآن"
         }
@@ -253,9 +262,13 @@ const translations = {
     },
     cta: {
       title: "هل أنت مستعد للتحول الرقمي؟",
-      subtitle: "انضم إلى أكثر من 1000 مطعم يستخدمون منصتنا",
+      subtitle: "انضم إلى مطاعم و كافيهات كثيرة تثق بمنصتنا وتستخدمها يوميًا",
       button: "ابدأ تجربة مجانية"
-    }
+    },
+    systemPreview: {
+      title: "استكشف نظام MenuTag",
+      subtitle: "جرب كيف يبدو النظام من الداخل – تصميم بسيط، تحكم كامل، وراحة لعملائك.",
+    },
   }
 };
 
@@ -264,10 +277,12 @@ export default function RestaurantLandingPage() {
   const t = translations[language];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen ">
+<AnimatedBackground/>
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-purple-900 via-indigo-900 to-blue-900 text-white py-20">
-        <div className="container mx-auto px-4">
+      <section className="relative bg-cover bg-center bg-no-repeat text-white py-20 m-[15px] rounded-[50px]" style={{ backgroundImage: 'url(/banner.jpg)' }}>
+        <div className="absolute inset-0 bg-black opacity-[0.4] rounded-[50px]"></div>
+        <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-6xl font-bold mb-6">{t.hero.title}</h1>
             <p className="text-xl md:text-2xl mb-8 text-gray-200">{t.hero.subtitle}</p>
@@ -282,56 +297,143 @@ export default function RestaurantLandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20">
+      <section className="py-[35px]">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 bg-gradient-to-r from-purple-900 to-indigo-900 bg-clip-text text-transparent">{t.features.title}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-6 gap-8">
             {t.features.items.map((feature, index) => (
-              <div key={index} className="bg-white p-8 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
-                <div className="text-purple-600 mb-4">{feature.icon}</div>
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
+              <div key={index} className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 text-center">
+                <div className="text-purple-600 mb-3 flex justify-center items-center">{feature.icon}</div>
+                <h3 className="text-sm font-semibold mb-2 text-center">{feature.title}</h3>
+                <p className="text-gray-600 text-[12px] text-center">{feature.description}</p>
               </div>
             ))}
           </div>
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-6 gap-8 mt-[25px]">
+            {t.additionalFeatures.items.map((feature, index) => (
+              <div key={index} className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 text-center">
+                <div className="text-purple-600 mb-3 flex justify-center items-center">{feature.icon}</div>
+                <h3 className="text-sm font-semibold mb-2 text-center">{feature.title}</h3>
+                <p className="text-gray-600 text-[12px] text-center">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Additional Features Section */}
+          <section className="py-[40px]">
+            <div className="container mx-auto px-4">
+              <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 bg-gradient-to-r from-purple-900 to-indigo-900 bg-clip-text text-transparent">
+                {language === 'ar' ? 'كيف يعمل' : 'How It Works'}
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {/* Step 1 */}
+                <div className="group relative bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+                  <div className="absolute -top-4 -left-4 w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white text-xl font-bold group-hover:scale-110 transition-transform duration-300">
+                    1
+                  </div>
+                  <div className="mt-4">
+                    <h3 className="text-xl font-semibold mb-3 text-gray-800">
+                      {language === 'ar' ? 'سجل حسابك' : 'Create Account'}
+                    </h3>
+                    <p className="text-gray-600">
+                      {language === 'ar' 
+                        ? 'قم بإنشاء حسابك بسهولة وابدأ رحلتك معنا'
+                        : 'Create your account easily and start your journey with us'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 2 */}
+                <div className="group relative bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+                  <div className="absolute -top-4 -left-4 w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white text-xl font-bold group-hover:scale-110 transition-transform duration-300">
+                    2
+                  </div>
+                  <div className="mt-4">
+                    <h3 className="text-xl font-semibold mb-3 text-gray-800">
+                      {language === 'ar' ? 'أضف قائمة الطعام' : 'Add Menu Items'}
+                    </h3>
+                    <p className="text-gray-600">
+                      {language === 'ar'
+                        ? 'أضف وجباتك وأطباقك مع الصور والأسعار'
+                        : 'Add your meals and dishes with images and prices'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div className="group relative bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+                  <div className="absolute -top-4 -left-4 w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white text-xl font-bold group-hover:scale-110 transition-transform duration-300">
+                    3
+                  </div>
+                  <div className="mt-4">
+                    <h3 className="text-xl font-semibold mb-3 text-gray-800">
+                      {language === 'ar' ? 'اطبع رمز QR' : 'Print QR Code'}
+                    </h3>
+                    <p className="text-gray-600">
+                      {language === 'ar'
+                        ? 'قم بطباعة رمز QR الخاص بك لكل طاولة'
+                        : 'Print your QR code for each table'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 4 */}
+                <div className="group relative bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+                  <div className="absolute -top-4 -left-4 w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white text-xl font-bold group-hover:scale-110 transition-transform duration-300">
+                    4
+                  </div>
+                  <div className="mt-4">
+                    <h3 className="text-xl font-semibold mb-3 text-gray-800">
+                      {language === 'ar' ? 'ضع الرمز على الطاولات' : 'Place on Tables'}
+                    </h3>
+                    <p className="text-gray-600">
+                      {language === 'ar'
+                        ? 'ضع رمز QR على طاولاتك وابدأ في استقبال الطلبات'
+                        : 'Place QR codes on your tables and start receiving orders'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
         </div>
+
       </section>
 
-      {/* Additional Features Section */}
-      <section className="py-20 bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* System Preview Section */}
+      <section className="py-[35px]">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 bg-gradient-to-r from-purple-900 to-indigo-900 bg-clip-text text-transparent">{t.additionalFeatures.title}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {t.additionalFeatures.items.map((feature, index) => (
-              <div key={index} className="bg-white p-8 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
-                <div className="text-purple-600 mb-4">{feature.icon}</div>
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
-              </div>
-            ))}
-          </div>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 bg-gradient-to-r from-purple-900 to-indigo-900 bg-clip-text text-transparent">
+            {t.systemPreview.title}
+          </h2>
+          <p className="text-xl text-gray-600 text-center mb-12">
+            {t.systemPreview.subtitle}
+          </p>
+          
+          <SystemPreviewSlider />
         </div>
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20">
+      <section className="py-[35px]">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 bg-gradient-to-r from-purple-900 to-indigo-900 bg-clip-text text-transparent">{t.pricing.title}</h2>
           <p className="text-xl text-gray-600 text-center mb-12">{t.pricing.subtitle}</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {t.pricing.plans.map((plan, index) => (
               <div key={index} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
-                <div className="p-8">
-                  <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-900 to-indigo-900 bg-clip-text text-transparent">{plan.name}</h3>
-                  <div className="mb-6">
-                    <span className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">${plan.price}</span>
+                <div className="p-8 text-center">
+                  <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-900 to-indigo-900 bg-clip-text text-transparent text-center">{plan.name}</h3>
+                  <div className="mb-6 text-center">
+                    <span className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">EGP {plan.price}</span>
                     <span className="text-gray-600">/{plan.duration}</span>
                   </div>
                   <ul className="space-y-4 mb-8">
                     {plan.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-center text-gray-600">
-                        <FaCheck className="w-5 h-5 text-purple-500 mr-2 flex-shrink-0" />
-                        <span>{feature}</span>
+                      <li key={featureIndex} className="flex items-center justify-center text-gray-600 text-center">
+                        <FaCheck className="w-5 h-5 text-purple-500 mx-2 flex-shrink-0" />
+                        <span className="text-center">{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -349,8 +451,9 @@ export default function RestaurantLandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-r from-purple-900 via-indigo-900 to-blue-900 text-white py-20">
-        <div className="container mx-auto px-4 text-center">
+      <section className="relative bg-cover bg-center bg-no-repeat text-white py-20 m-[15px] rounded-[50px]" style={{ backgroundImage: 'url(/banner2.webp)' }}>
+        <div className="absolute inset-0 bg-black opacity-[0.4] rounded-[50px]"></div>
+        <div className="container mx-auto px-4 text-center relative z-10">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">{t.cta.title}</h2>
           <p className="text-xl mb-8 text-gray-200">{t.cta.subtitle}</p>
           <Link

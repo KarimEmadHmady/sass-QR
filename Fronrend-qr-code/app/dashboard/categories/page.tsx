@@ -320,17 +320,17 @@ const CategoriesPage = () => {
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-4">
-              <h1 className="text-lg font-bold">{language === 'ar' ? 'إدارة الفئات' : 'Categories Management'}</h1>
+              <h1 className="text-[14px] sm:text-lg font-bold">{language === 'ar' ? 'إدارة الفئات' : 'Categories Management'}</h1>
               <button
                 onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
-                className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                className="px-2 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors "
               >
                 {language === 'en' ? 'عربي' : 'English'}
               </button>
             </div>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="bg-[#222] text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-[#333] cursor-pointer"
+              className="bg-[#222] text-[12px] sm:text-lg text-white px-2 py-2 rounded-lg flex items-center gap-2 hover:bg-[#333] cursor-pointer"
             >
               <PlusIcon />
               {language === 'ar' ? 'إضافة فئة جديدة' : 'Add New Category'}
