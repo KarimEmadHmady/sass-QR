@@ -50,7 +50,7 @@ interface DashboardStats {
 }
 
 export default function RestaurantDashboard() {
-  const { restaurant, token, isAuthenticated } = useAuth();
+  const { restaurant, token, isAuthenticated, login } = useAuth();
   const router = useRouter();
   const { language } = useLanguage();
   const [meals, setMeals] = useState<Meal[]>([]);
@@ -67,17 +67,45 @@ export default function RestaurantDashboard() {
   const [showSubscriptionWarning, setShowSubscriptionWarning] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated || !restaurant) {
-      router.push('/restaurant-login');
-      return;
+    // Check for token and restaurant data in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const restaurantData = urlParams.get('restaurant');
+    
+    if (token && restaurantData && !isAuthenticated) {
+      try {
+        // Parse restaurant data
+        const restaurant = JSON.parse(decodeURIComponent(restaurantData));
+        
+        // Save to localStorage
+        localStorage.setItem('token', token);
+        localStorage.setItem('restaurant', JSON.stringify(restaurant));
+        
+        // Update auth context
+        login(restaurant, token);
+        
+        // Remove data from URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch (error) {
+        console.error('Error processing auto-login data:', error);
+      }
     }
 
     const fetchData = async () => {
       try {
+        // Get token from localStorage
+        const storedToken = localStorage.getItem('token');
+        const storedRestaurant = localStorage.getItem('restaurant');
+
+        if (!storedToken || !storedRestaurant) {
+          router.push('/restaurant-login');
+          return;
+        }
+
         // Fetch restaurant profile to get trial information
         const restaurantRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/profile`, {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${storedToken}`,
           },
         });
     
@@ -105,12 +133,12 @@ export default function RestaurantDashboard() {
         const [mealsRes, categoriesRes] = await Promise.all([
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/meals`, {
             headers: {
-              Authorization: `Bearer ${token}`,
+              Authorization: `Bearer ${storedToken}`,
             },
           }),
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
             headers: {
-              Authorization: `Bearer ${token}`,
+              Authorization: `Bearer ${storedToken}`,
             },
           }),
         ]);
@@ -119,7 +147,7 @@ export default function RestaurantDashboard() {
           throw new Error(`Failed to fetch meals: ${mealsRes.status}`);
         }
         if (!categoriesRes.ok) {
-          throw new Error(`Failed to fetch categories: ${categoriesRes.status}`);
+          throw new Error(`Failed to fetch categories: ${categoriesRes.ok}`);
         }
     
         const mealsData = await mealsRes.json();
@@ -152,6 +180,10 @@ export default function RestaurantDashboard() {
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
         toast.error(language === 'ar' ? 'حدث خطأ في تحميل البيانات' : 'Error loading dashboard data');
+        // If there's an authentication error, redirect to login
+        if (error instanceof Error && error.message.includes('401')) {
+          router.push('/restaurant-login');
+        }
         setStats({
           totalReviews: 0,
           totalMeals: 0,
@@ -168,7 +200,7 @@ export default function RestaurantDashboard() {
     };
     
     fetchData();
-  }, [isAuthenticated, restaurant, token, router]);
+  }, [isAuthenticated, restaurant, token, router, language]);
 
   const deleteMeal = async (id: string) => {
     const confirmed = window.confirm(language === 'ar' ? 'هل أنت متأكد من حذف هذه الوجبة؟' : 'Are you sure you want to delete this meal?');

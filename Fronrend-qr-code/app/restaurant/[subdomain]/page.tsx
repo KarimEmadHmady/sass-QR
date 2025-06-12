@@ -128,8 +128,8 @@ const translations = {
     facebook: 'Facebook',
     instagram: 'Instagram',
     tiktok: 'TikTok',
-    location: 'Location',
-    locationPlaceholder: 'Enter your restaurant location',
+    location: 'ID Google reviews',
+    locationPlaceholder: 'Enter your ID Google reviews ',
     expired: 'Expired'
   },
   ar: {
@@ -170,7 +170,7 @@ const translations = {
     facebook: 'فيسبوك',
     instagram: 'انستجرام',
     tiktok: 'تيك توك',
-    location: 'الموقع',
+    location: 'ID تقييم جوجل ',
     locationPlaceholder: 'أدخل موقع المطعم',
     expired: 'منتهي'
   }
@@ -1049,7 +1049,7 @@ export default function RestaurantPage() {
                     value={editedRestaurant.settings?.location || ''}
                     onChange={(e) => handleLocationChange(e.target.value)}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    placeholder={language === 'ar' ? 'موقع المطعم' : 'Restaurant location'}
+                    placeholder={language === 'ar' ? 'اضف ال ID هنا ليستطيع العملاء تقييمك على جوجل' : 'Paste ID here'}
                   />
                 </div>
               </div>

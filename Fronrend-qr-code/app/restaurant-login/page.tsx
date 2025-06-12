@@ -69,9 +69,9 @@ export default function RestaurantLoginPage() {
       
       toast.success(language === 'ar' ? 'تم تسجيل الدخول بنجاح' : 'Login successful');
       
-      // Redirect to dashboard using window.location.replace to prevent back button issues
-      const redirectUrl = `http://${restaurant.subdomain}.localhost:3000/dashboard`;
-      console.log('Redirecting to:', redirectUrl);
+      // Redirect to subdomain with auto-login
+      const redirectUrl = `http://${restaurant.subdomain}.localhost:3000/dashboard?token=${token}&restaurant=${encodeURIComponent(JSON.stringify(restaurant))}`;
+      console.log('Redirecting to subdomain with auto-login:', redirectUrl);
       window.location.replace(redirectUrl);
       
     } catch (error) {

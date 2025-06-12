@@ -107,8 +107,8 @@ export default function RestaurantRegisterPage() {
       ar: "رابط المطعم"
     },
     subdomainHint: {
-      en: "Your restaurant will be available at: subdomain.localhost:3000",
-      ar: "سيكون مطعمك متاحاً على: subdomain.localhost:3000"
+      en: (subdomain: string) => `Your restaurant will be available at: ${subdomain}.localhost:3000`,
+      ar: (subdomain: string) => `سيكون مطعمك متاحاً على: ${subdomain}.localhost:3000`
     },
     register: {
       en: "Register",
@@ -130,17 +130,33 @@ export default function RestaurantRegisterPage() {
       en: "Facebook Link",
       ar: "رابط الفيسبوك"
     },
+    facebookPlaceholder: {
+      en: "Optional - Enter your Facebook page URL",
+      ar: "اختياري - أدخل رابط صفحة الفيسبوك"
+    },
     instagram: {
       en: "Instagram Link",
       ar: "رابط الانستجرام"
+    },
+    instagramPlaceholder: {
+      en: "Optional - Enter your Instagram profile URL",
+      ar: "اختياري - أدخل رابط حساب الانستجرام"
     },
     tiktok: {
       en: "TikTok Link",
       ar: "رابط التيك توك"
     },
+    tiktokPlaceholder: {
+      en: "Optional - Enter your TikTok profile URL",
+      ar: "اختياري - أدخل رابط حساب التيك توك"
+    },
     location: {
-      en: "Restaurant Location",
-      ar: "موقع المطعم"
+      en: "ID Google Review (There is an explanation inside How to create an ID)",
+      ar: "ID ريفيو جوجل (يوجد شرح بالداخل كيفية انشأ المعرف )"
+    },
+    locationPlaceholder: {
+      en: "Optional - Enter your Google Review ID",
+      ar: "اختياري - أدخل معرف مراجعة جوجل"
     }
   };
 
@@ -246,7 +262,9 @@ export default function RestaurantRegisterPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
             />
             <p className="mt-1 text-sm text-gray-500">
-              {translations.subdomainHint[language]}
+              {typeof translations.subdomainHint[language] === 'function' 
+                ? translations.subdomainHint[language](formData.subdomain)
+                : translations.subdomainHint[language]}
             </p>
           </div>
 
@@ -258,6 +276,7 @@ export default function RestaurantRegisterPage() {
               type="url"
               id="facebook"
               value={formData.settings.socialMedia.facebook}
+              placeholder={translations.facebookPlaceholder[language]}
               onChange={(e) => setFormData(prev => ({
                 ...prev,
                 settings: {
@@ -280,6 +299,7 @@ export default function RestaurantRegisterPage() {
               type="url"
               id="instagram"
               value={formData.settings.socialMedia.instagram}
+              placeholder={translations.instagramPlaceholder[language]}
               onChange={(e) => setFormData(prev => ({
                 ...prev,
                 settings: {
@@ -302,6 +322,7 @@ export default function RestaurantRegisterPage() {
               type="url"
               id="tiktok"
               value={formData.settings.socialMedia.tiktok}
+              placeholder={translations.tiktokPlaceholder[language]}
               onChange={(e) => setFormData(prev => ({
                 ...prev,
                 settings: {
@@ -324,6 +345,7 @@ export default function RestaurantRegisterPage() {
               type="text"
               id="location"
               value={formData.settings.location}
+              placeholder={translations.locationPlaceholder[language]}
               onChange={(e) => setFormData(prev => ({
                 ...prev,
                 settings: {
