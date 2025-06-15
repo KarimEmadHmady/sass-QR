@@ -52,7 +52,6 @@ export default function Navbar() {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/subdomain/${subdomain}`);
             if (response.ok) {
               const data = await response.json();
-              console.log('Restaurant data:', data);
               setCurrentRestaurant(data);
             } else {
               console.error('Failed to fetch restaurant data');
@@ -96,7 +95,6 @@ export default function Navbar() {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/subdomain/${subdomain}`);
         if (response.ok) {
           const data = await response.json();
-          console.log('Restaurant data:', data);
           setCurrentRestaurant(data);
         } else {
           console.error('Failed to fetch restaurant data');

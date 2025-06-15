@@ -234,7 +234,6 @@ const HomePage: React.FC = () => {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/subdomain/${subdomain}`);
         if (response.ok) {
           const data = await response.json();
-          console.log('Restaurant data:', data);
           setCurrentRestaurant(data);
         } else {
           console.error('Failed to fetch restaurant data');
@@ -313,13 +312,6 @@ const HomePage: React.FC = () => {
         return;
       }
 
-      // طباعة البيانات للتحقق
-      console.log('Token:', token);
-      console.log('User:', user);
-      console.log('Selected Meal:', selectedMeal);
-      console.log('Rating:', ratingNumber);
-      console.log('Comment:', comment);
-
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/meals/${selectedMeal._id}/reviews`,
         {
@@ -336,7 +328,6 @@ const HomePage: React.FC = () => {
         }
       );
 
-      console.log('Response:', response.data);
 
       // Create the new review object
       const newReview = {
@@ -415,7 +406,7 @@ const HomePage: React.FC = () => {
       <div className="bg-gradient-to-r from-primary/90 to-primary text-[#222] py-4 px-3 bg-[#eee]">
         <div className="container mx-auto max-w-6xl relative">
           <Image
-            src={currentRestaurant?.banner || "/banner.webp"}
+            src={currentRestaurant?.banner || "/bannerHome.jpg"}
             alt="Banner"
             className="w-full h-[200px] sm:h-[300px] md:h-[400px] lg:h-[300px] lg:w-[500px] object-cover object-[25%_28%] block mx-auto mb-6 transition-transform duration-500 group-hover:scale-105 rounded-[15px]"
             width={500}
@@ -423,7 +414,7 @@ const HomePage: React.FC = () => {
             onError={(e) => {
               // If the restaurant banner fails to load, fallback to default banner
               const target = e.target as HTMLImageElement;
-              target.src = "/banner.webp";
+              target.src = "/bannerHome.jpg";
             }}
           />
 

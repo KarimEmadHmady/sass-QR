@@ -195,7 +195,12 @@ const EditMealPage = () => {
     formData.append("description[ar]", meal.description.ar);
     formData.append("price", meal.price);
     formData.append("category", meal.category);
-    if (meal.image) formData.append("image", meal.image);
+    
+    // Handle image upload properly
+    const imageInput = document.querySelector('input[name="image"]') as HTMLInputElement;
+    if (imageInput && imageInput.files && imageInput.files[0]) {
+      formData.append("image", imageInput.files[0]);
+    }
 
     setSubmitting(true);
     try {
@@ -209,6 +214,7 @@ const EditMealPage = () => {
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
           },
         }
       );

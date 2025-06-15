@@ -96,6 +96,7 @@ const CategoriesPage = () => {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [language, setLanguage] = useState<'en' | 'ar'>('ar');
+  const [searchTerm, setSearchTerm] = useState("");
   const [newCategory, setNewCategory] = useState<NewCategory>({
     name: { en: "", ar: "" },
     description: { en: "", ar: "" },
@@ -318,6 +319,19 @@ const CategoriesPage = () => {
       <AnimatedBackground />
       <div className="max-w-6xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-6">
+          {/* Search Bar */}
+          <div className="max-w-md mx-auto relative mb-6">
+            <input
+              type="text"
+              className={`block w-full p-3 bg-gray-100 border rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary ${
+                language === 'ar' ? 'text-right' : 'text-left'
+              }`}
+              placeholder={language === 'ar' ? 'ابحث هنا ...' : 'Search here...'}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-4">
               <h1 className="text-[14px] sm:text-lg font-bold">{language === 'ar' ? 'إدارة الفئات' : 'Categories Management'}</h1>
@@ -337,89 +351,103 @@ const CategoriesPage = () => {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100">
             {categories && categories.length > 0 ? (
-              categories.map((category) => (
-                <div
-                  key={category._id}
-                  className={`bg-white rounded-lg shadow-md overflow-hidden ${language === 'ar' ? 'rtl' : 'ltr'}`}
-                  dir={language === 'ar' ? 'rtl' : 'ltr'}
-                >
-                  <div className="relative h-48">
-                    <Image
-                      src={category.image || '/placeholder.svg'}
-                      alt={language === 'ar' ? category.name?.ar : category.name?.en}
-                      className="object-cover"
-                      fill
-                    />
-                  </div>
-                  <div className="p-4">
-                    <h3 className="text-xl font-semibold mb-1">
-                      {language === 'ar' ? (
-                        <>
-                          {category.name?.ar || 'بدون عنوان'}
-                          <span className="text-sm text-gray-500 mr-2">
-                            ({category.mealCount} {category.mealCount === 1 ? 'وجبة' : 'وجبات'})
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          {category.name?.en || 'Untitled'}
-                          <span className="text-sm text-gray-500 ml-2">
-                            ({category.mealCount} {category.mealCount === 1 ? 'meal' : 'meals'})
-                          </span>
-                        </>
-                      )}
-                    </h3>
-                    <h4 className="text-sm text-gray-600 mb-2">
-                      {language === 'ar' ? category.name?.en : category.name?.ar}
-                    </h4>
-                    {category.description && (
-                      <>
-                        <p className="text-gray-600 text-sm mb-1">
-                          {language === 'ar' ? category.description.ar : category.description.en}
-                        </p>
-                        <p className="text-gray-500 text-xs mb-2">
-                          {language === 'ar' ? category.description.en : category.description.ar}
-                        </p>
-                      </>
-                    )}
-                    <div className="flex justify-end gap-2 mt-4">
-                      <button
-                        onClick={() => {
-                          setEditingCategory(category);
-                          setNewCategory({
-                            name: { 
-                              en: category.name?.en || '', 
-                              ar: category.name?.ar || '' 
-                            },
-                            description: category.description ? { 
-                              en: category.description.en || '', 
-                              ar: category.description.ar || '' 
-                            } : { en: "", ar: "" },
-                            image: null,
-                            imagePreview: category.image || '/placeholder.svg',
-                          });
-                        }}
-                        className="text-blue-600 hover:text-blue-800 bg-[#eee] p-2 rounded cursor-pointer"
-                        title={language === 'ar' ? 'تعديل' : 'Edit'}
-                      >
-                        <EditIcon />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCategory(category._id)}
-                        className="text-red-600 hover:text-red-800 bg-[#eee] p-2 rounded cursor-pointer"
-                        title={language === 'ar' ? 'حذف' : 'Delete'}
-                      >
-                        <TrashIcon />
-                      </button>
+              <div className="divide-y divide-gray-100">
+                {categories
+                  .filter((category) => {
+                    const searchLower = searchTerm.toLowerCase();
+                    return (
+                      category.name.en.toLowerCase().includes(searchLower) ||
+                      category.name.ar.includes(searchTerm) ||
+                      (category.description?.en.toLowerCase().includes(searchLower) || false) ||
+                      (category.description?.ar.includes(searchTerm) || false)
+                    );
+                  })
+                  .map((category) => (
+                    <div
+                      key={category._id}
+                      className={`p-4 hover:bg-gray-50 transition-all duration-200 ease-in-out transform hover:scale-[1.01] hover:shadow-md ${language === 'ar' ? 'flex-row-reverse' : 'flex-row'} flex items-center gap-4 border-b border-gray-100 last:border-b-0`}
+                    >
+                      <div className="relative w-16 h-16 flex-shrink-0 group">
+                        <Image
+                          src={category.image || '/placeholder.svg'}
+                          alt={language === 'ar' ? category.name?.ar : category.name?.en}
+                          width={100}
+                          height={100}
+                          className="object-cover rounded-md transition-transform duration-200 group-hover:scale-105"
+                        />
+                      </div>
+                      <div className="flex-grow min-w-0">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-base font-medium text-gray-900 truncate group-hover:text-primary transition-colors duration-200">
+                                {language === 'ar' ? category.name?.ar : category.name?.en}
+                              </h3>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 group-hover:bg-blue-200 transition-colors duration-200">
+                                {category.mealCount} {language === 'ar' ? 'وجبة' : 'meals'}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-500 mt-0.5">
+                              {language === 'ar' ? category.name?.en : category.name?.ar}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <button
+                              onClick={() => {
+                                setEditingCategory(category);
+                                setNewCategory({
+                                  name: { 
+                                    en: category.name?.en || '', 
+                                    ar: category.name?.ar || '' 
+                                  },
+                                  description: category.description ? { 
+                                    en: category.description.en || '', 
+                                    ar: category.description.ar || '' 
+                                  } : { en: "", ar: "" },
+                                  image: null,
+                                  imagePreview: category.image || '/placeholder.svg',
+                                });
+                              }}
+                              className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"
+                              title={language === 'ar' ? 'تعديل' : 'Edit'}
+                            >
+                              <EditIcon />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCategory(category._id)}
+                              className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
+                              title={language === 'ar' ? 'حذف' : 'Delete'}
+                            >
+                              <TrashIcon />
+                            </button>
+                          </div>
+                        </div>
+                        {category.description && (
+                          <div className="mt-2">
+                            <p className="text-sm text-gray-600 line-clamp-2">
+                              {language === 'ar' ? category.description.ar : category.description.en}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">
+                              {language === 'ar' ? category.description.en : category.description.ar}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))
+                  ))}
+              </div>
             ) : (
-              <div className="col-span-full text-center py-8 text-gray-500">
-                {language === 'ar' ? 'لا توجد فئات متاحة' : 'No categories available'}
+              <div className="text-center py-12">
+                <div className="text-gray-400 mb-2">
+                  <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+                <p className="text-gray-500">
+                  {language === 'ar' ? 'لا توجد فئات متاحة' : 'No categories available'}
+                </p>
               </div>
             )}
           </div>

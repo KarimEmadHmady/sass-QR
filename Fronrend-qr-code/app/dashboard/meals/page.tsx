@@ -278,89 +278,108 @@ const MealsPage = () => {
           {language === 'ar' ? 'حدث خطأ في تحميل الوجبات' : error}
         </div>
       ) : filteredMeals.length === 0 ? (
-        <div className="text-center text-gray-500 py-8">
-          {language === 'ar' ? 'لا توجد وجبات' : 'No meals found'}
+        <div className="text-center py-12">
+          <div className="text-gray-400 mb-2">
+            <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+          </div>
+          <p className="text-gray-500">
+            {language === 'ar' ? 'لا توجد وجبات' : 'No meals found'}
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredMeals.map((meal) => (
-            <div
-              key={meal._id}
-              className={`bg-white shadow-lg rounded-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300 ${
-                language === 'ar' ? 'rtl' : 'ltr'
-              }`}
-              dir={language === 'ar' ? 'rtl' : 'ltr'}
-            >
-              <Image 
-                src={meal.image || "/placeholder.svg"}
-                alt={language === 'ar' ? meal.name?.ar : meal.name?.en}
-                className="w-full h-32 object-cover"
-                width={600}
-                height={400}
-              />
-              <div className="p-4">
-                <h2 className="text-xl font-semibold text-gray-800 mb-1">
-                  {language === 'ar' ? meal.name?.ar : meal.name?.en}
-                </h2>
-                <h3 className="text-sm text-gray-600 mb-2">
-                  {language === 'ar' ? meal.name?.en : meal.name?.ar}
-                </h3>
-                <p className="text-gray-600 mt-2 text-sm mb-1">
-                  {language === 'ar' ? meal.description?.ar : meal.description?.en}
-                </p>
-                <p className="text-gray-500 text-xs mb-2">
-                  {language === 'ar' ? meal.description?.en : meal.description?.ar}
-                </p>
-                <p className="text-lg font-bold text-green-500 mt-4">
-                  {language === 'ar' ? `السعر: ${meal.price} جنيه` : `Price: ${meal.price} EGP`}
-                </p>
-                <p className="text-md text-gray-700 mt-2">
-                  {language === 'ar' ? 'الفئة: ' : 'Category: '}
-                  {language === 'ar' 
-                    ? `${meal.category?.name?.ar || 'غير مصنف'}`
-                    : `${meal.category?.name?.en || 'Uncategorized'}`
-                  }
-                </p>
-                <div className="flex items-center justify-end gap-1 mb-1">
-                  {meal.reviews && meal.reviews.length > 0 ? (
-                    <>
-                      {renderStars(
-                        meal.reviews.reduce((sum, review) => sum + review.rating, 0) / meal.reviews.length
-                      )}
-                      <span className="text-xs text-gray-500 mr-1">
-                        ({meal.reviews.length} {language === 'ar' ? 'تقييم' : 'reviews'})
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-xs text-gray-500">
-                      {language === 'ar' ? 'لا توجد تقييمات' : 'No reviews'}
-                    </span>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+          <div className="divide-y divide-gray-100">
+            {filteredMeals.map((meal) => (
+              <div
+                key={meal._id}
+                className={`p-4 hover:bg-gray-50 transition-all duration-200 ease-in-out transform hover:scale-[1.01] hover:shadow-md ${language === 'ar' ? 'flex-row-reverse' : 'flex-row'} flex items-center gap-4 border-b border-gray-100 last:border-b-0`}
+              >
+                <div className="relative w-16 h-16 flex-shrink-0 group">
+                  <Image
+                    src={meal.image || "/placeholder.svg"}
+                    alt={language === 'ar' ? meal.name?.ar : meal.name?.en}
+                    width={100}
+                    height={100}
+                    className="object-cover rounded-md transition-transform duration-200 group-hover:scale-105"
+                  />
+                </div>
+                <div className="flex-grow min-w-0">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-medium text-gray-900 truncate group-hover:text-primary transition-colors duration-200">
+                          {language === 'ar' ? meal.name?.ar : meal.name?.en}
+                        </h3>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 group-hover:bg-green-200 transition-colors duration-200">
+                          {meal.price} {language === 'ar' ? 'جنيه' : 'EGP'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-0.5">
+                        {language === 'ar' ? meal.name?.en : meal.name?.ar}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-gray-500">
+                          {language === 'ar' ? 'الفئة: ' : 'Category: '}
+                          {language === 'ar' ? meal.category?.name?.ar : meal.category?.name?.en}
+                        </span>
+                        {meal.reviews && meal.reviews.length > 0 && (
+                          <div className="flex items-center gap-1">
+                            {renderStars(
+                              meal.reviews.reduce((sum, review) => sum + review.rating, 0) / meal.reviews.length
+                            )}
+                            <span className="text-xs text-gray-500">
+                              ({meal.reviews.length})
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Link
+                        href={`/dashboard/meals/edit/${meal._id}`}
+                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"
+                        title={language === 'ar' ? 'تعديل' : 'Edit'}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="cursor-pointer">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </Link>
+                      <button
+                        onClick={() => {
+                          if (window.confirm(language === 'ar' 
+                            ? 'هل أنت متأكد من حذف هذه الوجبة؟' 
+                            : 'Are you sure you want to delete this meal?')) {
+                            deleteMeal(meal._id);
+                          }
+                        }}
+                        className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
+                        title={language === 'ar' ? 'حذف' : 'Delete'}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="cursor-pointer">
+                          <path d="M3 6h18" />
+                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  {meal.description && (
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-600 line-clamp-2">
+                        {language === 'ar' ? meal.description.ar : meal.description.en}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">
+                        {language === 'ar' ? meal.description.en : meal.description.ar}
+                      </p>
+                    </div>
                   )}
                 </div>
-
-                <div className={`flex gap-2 mt-4 ${language === 'ar' ? 'flex-row-reverse' : ''}`}>
-                  <Link
-                    href={`/dashboard/meals/edit/${meal._id}`}
-                    className="inline-block text-blue-500 hover:text-blue-700 bg-[#eee] p-2 rounded cursor-pointer"
-                  >
-                    {language === 'ar' ? 'تعديل' : 'Edit'}
-                  </Link>
-                  <button
-                    onClick={() => {
-                      if (window.confirm(language === 'ar' 
-                        ? 'هل أنت متأكد من حذف هذه الوجبة؟' 
-                        : 'Are you sure you want to delete this meal?')) {
-                        deleteMeal(meal._id);
-                      }
-                    }}
-                    className="inline-block text-red-500 hover:text-red-700 bg-[#eee] p-2 rounded cursor-pointer"
-                  >
-                    {language === 'ar' ? 'حذف' : 'Delete'}
-                  </button>
-                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 

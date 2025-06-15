@@ -4,6 +4,7 @@ import { FaFacebookF, FaInstagram, FaTiktok, FaGoogle } from "react-icons/fa";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { useEffect, useState } from "react";
 import { useSubdomain } from "@/contexts/SubdomainContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Restaurant {
   settings: {
@@ -18,6 +19,7 @@ interface Restaurant {
 
 const SocialIcons = () => {
   const { subdomain } = useSubdomain();
+  const { language } = useLanguage();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasSubdomain, setHasSubdomain] = useState(false);
@@ -39,16 +41,14 @@ const SocialIcons = () => {
 
       setHasSubdomain(true);
       try {
-        console.log('Fetching data for subdomain:', currentSubdomain);
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/subdomain/${currentSubdomain}`);
-        console.log('Response status:', response.status);
 
         if (!response.ok) {
           throw new Error(`Failed to fetch restaurant data: ${response.status}`);
         }
 
         const data = await response.json();
-        console.log('Received restaurant data:', data);
+
 
         if (data && data.settings && data.settings.socialMedia) {
           setRestaurant(data);
@@ -110,7 +110,7 @@ const SocialIcons = () => {
                          before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2
                          before:border-8 before:border-transparent before:border-t-white"
             >
-              قيّمنا على جوجل
+              {language === 'ar' ? 'قيّمنا على جوجل' : 'Rate us on Google'}
             </span>
 
             <a
@@ -170,7 +170,7 @@ const SocialIcons = () => {
                        before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2
                        before:border-8 before:border-transparent before:border-t-white"
           >
-            قيّمنا على جوجل
+            {language === 'ar' ? 'قيّمنا على جوجل' : 'Rate us on Google'}
           </span>
             <a
               href={`https://search.google.com/local/writereview?placeid=${encodeURIComponent(location)}`}

@@ -78,7 +78,6 @@ export default function LoginPage() {
   
       const { token, user } = data;
   
-      console.log('Login response:', { token, user });
   
       // تخزين التوكن
       localStorage.setItem('token', token);

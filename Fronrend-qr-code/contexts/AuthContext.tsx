@@ -8,7 +8,7 @@ import React, {
   ReactNode,
 } from "react";
 
-// شكل بيانات المستخدم العادي
+
 interface RegularUser {
   id: string;
   name: string;
@@ -16,7 +16,6 @@ interface RegularUser {
   role: 'user';
 }
 
-// شكل بيانات المطعم
 interface RestaurantUser {
   _id: string;
   id: string;
@@ -49,10 +48,8 @@ interface RestaurantUser {
   updatedAt?: string;
 }
 
-// نوع بيانات اليوزر (يمكن أن يكون مستخدم عادي أو مطعم)
 type User = RegularUser | RestaurantUser;
 
-// شكل بيانات الكونتكست
 interface AuthContextType {
   restaurant: RestaurantUser | null;
   user: RegularUser | null;
@@ -76,12 +73,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // تهيئة حالة تسجيل الدخول عند تحميل التطبيق
   useEffect(() => {
     const initializeAuth = () => {
-      console.log('AuthProvider: Initializing auth state');
+
       const storedToken = localStorage.getItem('token');
       const storedRestaurant = localStorage.getItem('restaurant');
       const storedUser = localStorage.getItem('user');
 
-      console.log('AuthProvider: Stored data:', { storedToken, storedRestaurant, storedUser });
+
 
       if (storedToken) {
         try {
@@ -118,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Add event listener for restaurant updates
     const handleRestaurantUpdate = (event: CustomEvent) => {
-      console.log('AuthProvider: Restaurant update received:', event.detail);
+
       const updatedRestaurant = event.detail;
       setRestaurant(updatedRestaurant);
       localStorage.setItem('restaurant', JSON.stringify(updatedRestaurant));
@@ -132,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (userData: RestaurantUser | RegularUser, token: string) => {
-    console.log('AuthProvider: Login called with:', { userData, token });
+
     
     // First update state
     if ('subdomain' in userData) {
@@ -177,11 +174,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(token);
     setIsAuthenticated(true);
     
-    console.log('AuthProvider: Login completed with token:', token);
+
   };
 
   const logout = () => {
-    console.log('AuthProvider: Logout called');
+
     
     // First clear state
     setRestaurant(null);
@@ -194,7 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('restaurant');
     localStorage.removeItem('user');
     
-    console.log('AuthProvider: Logout completed');
+
   };
 
   const value = {
@@ -206,7 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated
   };
 
-  console.log('AuthProvider: Current state:', value);
+
 
   if (!isInitialized) {
     return null;

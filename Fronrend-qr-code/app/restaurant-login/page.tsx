@@ -31,9 +31,7 @@ export default function RestaurantLoginPage() {
     setLoading(true);
     setError(null);
 
-    try {
-      console.log('Login attempt with:', { email, password });
-      
+    try {      
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -41,14 +39,12 @@ export default function RestaurantLoginPage() {
       });
 
       const data = await res.json();
-      console.log('Login response:', data);
 
       if (!res.ok) {
         throw new Error(data.message || (language === 'ar' ? "فشل تسجيل الدخول" : "Login failed"));
       }
 
       const { token, restaurant } = data;
-      console.log('Login successful:', { token, restaurant });
       
       // First save to localStorage
       localStorage.setItem('token', token);
@@ -65,13 +61,11 @@ export default function RestaurantLoginPage() {
       // Verify data was saved
       const savedToken = localStorage.getItem('token');
       const savedRestaurant = localStorage.getItem('restaurant');
-      console.log('Verification - Saved data:', { savedToken, savedRestaurant });
       
       toast.success(language === 'ar' ? 'تم تسجيل الدخول بنجاح' : 'Login successful');
       
       // Redirect to subdomain with auto-login
       const redirectUrl = `http://${restaurant.subdomain}.localhost:3000/dashboard?token=${token}&restaurant=${encodeURIComponent(JSON.stringify(restaurant))}`;
-      console.log('Redirecting to subdomain with auto-login:', redirectUrl);
       window.location.replace(redirectUrl);
       
     } catch (error) {
@@ -91,7 +85,7 @@ export default function RestaurantLoginPage() {
   // Translations
   const translations = {
     welcomeBack: {
-      en: "Welcome Back Restaurant Owner",
+      en: "Welcome Back  ",
       ar: "مرحباً بعودتك"
     },
     email: {

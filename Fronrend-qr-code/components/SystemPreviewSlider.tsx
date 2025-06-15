@@ -39,7 +39,7 @@ export default function SystemPreviewSlider() {
         <SwiperSlide>
           <div className="relative h-[400px] rounded-2xl overflow-hidden">
             <Image
-              src="/banner2.webp"
+              src="/1.PNG"
               alt="MenuTag System Preview 1"
               fill
               className="object-cover"
@@ -50,7 +50,7 @@ export default function SystemPreviewSlider() {
         <SwiperSlide>
           <div className="relative h-[400px] rounded-2xl overflow-hidden">
             <Image
-              src="/banner2.webp"
+              src="/2.PNG"
               alt="MenuTag System Preview 2"
               fill
               className="object-cover"
@@ -61,7 +61,7 @@ export default function SystemPreviewSlider() {
         <SwiperSlide>
           <div className="relative h-[400px] rounded-2xl overflow-hidden">
             <Image
-              src="/banner2.webp"
+              src="/3.PNG"
               alt="MenuTag System Preview 3"
               fill
               className="object-cover"
@@ -72,7 +72,52 @@ export default function SystemPreviewSlider() {
         <SwiperSlide>
           <div className="relative h-[400px] rounded-2xl overflow-hidden">
             <Image
-              src="/banner2.webp"
+              src="/4.PNG"
+              alt="MenuTag System Preview 4"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+          </div>
+        </SwiperSlide>
+        <SwiperSlide>
+          <div className="relative h-[400px] rounded-2xl overflow-hidden">
+            <Image
+              src="/5.PNG"
+              alt="MenuTag System Preview 4"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+          </div>
+        </SwiperSlide>
+        <SwiperSlide>
+          <div className="relative h-[400px] rounded-2xl overflow-hidden">
+            <Image
+              src="/6.PNG"
+              alt="MenuTag System Preview 4"
+              width={369}
+              height={200}
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+          </div>
+        </SwiperSlide>
+        <SwiperSlide>
+          <div className="relative h-[400px] rounded-2xl overflow-hidden">
+            <Image
+              src="/7.PNG"
+              alt="MenuTag System Preview 4"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+          </div>
+        </SwiperSlide>
+        <SwiperSlide>
+          <div className="relative h-[400px] rounded-2xl overflow-hidden">
+            <Image
+              src="/8.PNG"
               alt="MenuTag System Preview 4"
               fill
               className="object-cover"
