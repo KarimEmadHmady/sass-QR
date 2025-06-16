@@ -5,7 +5,7 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 
-export default function SystemPreviewSlider() {
+export default function SystemPreviewSliderMop() {
   return (
     <div className="max-w-4xl mx-auto" dir="ltr">
       <style jsx global>{`
@@ -39,7 +39,7 @@ export default function SystemPreviewSlider() {
 <SwiperSlide>
   <div className="relative w-full h-[200px] md:h-[300px] lg:h-[400px] rounded-2xl overflow-hidden">
     <Image
-      src="/1.PNG"
+      src="/6.PNG"
       alt="MenuTag System Preview "
       fill
       className="object-contain"
@@ -50,7 +50,7 @@ export default function SystemPreviewSlider() {
 <SwiperSlide>
   <div className="relative w-full h-[200px] md:h-[300px] lg:h-[400px] rounded-2xl overflow-hidden">
     <Image
-      src="/2.PNG"
+      src="/7.PNG"
       alt="MenuTag System Preview "
       fill
       className="object-contain"
@@ -61,7 +61,7 @@ export default function SystemPreviewSlider() {
 <SwiperSlide>
   <div className="relative w-full h-[200px] md:h-[300px] lg:h-[400px] rounded-2xl overflow-hidden">
     <Image
-      src="/3.PNG"
+      src="/11.PNG"
       alt="MenuTag System Preview "
       fill
       className="object-contain"
@@ -72,7 +72,7 @@ export default function SystemPreviewSlider() {
 <SwiperSlide>
   <div className="relative w-full h-[200px] md:h-[300px] lg:h-[400px] rounded-2xl overflow-hidden">
     <Image
-      src="/4.PNG"
+      src="/12.PNG"
       alt="MenuTag System Preview "
       fill
       className="object-contain"

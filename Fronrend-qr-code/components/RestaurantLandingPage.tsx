@@ -6,6 +6,7 @@ import { FaQrcode, FaChartLine, FaUsers, FaMobileAlt, FaShieldAlt, FaClock, FaCh
 import { SiGoogle } from 'react-icons/si';
 import AnimatedBackground from "./AnimatedBackground";
 import SystemPreviewSlider from "./SystemPreviewSlider";
+import SystemPreviewSliderMop from "./SystemPreviewSliderMob";
 
 const translations = {
   en: {
@@ -412,6 +413,8 @@ export default function RestaurantLandingPage() {
           </p>
           
           <SystemPreviewSlider />
+          <br></br>
+          <SystemPreviewSliderMop/>
         </div>
       </section>
 
