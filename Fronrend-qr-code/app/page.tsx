@@ -61,7 +61,7 @@ interface Restaurant {
 
 const HomePage: React.FC = () => {
   const { language } = useLanguage();
-  const { isAuthenticated, user, restaurant } = useAuth() as { restaurant: any; isAuthenticated: boolean; user: { id: string; username: string } | null };
+  const { isAuthenticated, user } = useAuth() as { isAuthenticated: boolean; user: { id: string; username: string } | null };
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -289,9 +289,9 @@ const HomePage: React.FC = () => {
     return matchesSearch && matchesCategory;
   });
 
-  const renderStars = (rating: number): React.ReactNode => {
+  const renderStars = (rating: number, lang: string): React.ReactNode => {
     return (
-      <div className="flex">
+      <div className="flex" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
@@ -371,13 +371,21 @@ const HomePage: React.FC = () => {
       setRating(0);
       setComment("");
       toast.success(language === 'ar' ? "تم إضافة التقييم بنجاح" : "Review added successfully");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error submitting review:", error);
-      console.error("Error response:", error.response?.data);
-      const errorMessage = error.response?.data?.message || error.message;
-      toast.error(language === 'ar' 
-        ? `حدث خطأ أثناء إضافة التقييم: ${errorMessage}` 
-        : `Error adding review: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: { message?: string } } };
+        console.error("Error response:", axiosError.response?.data);
+        const finalErrorMessage = axiosError.response?.data?.message || errorMessage;
+        toast.error(language === 'ar' 
+          ? `حدث خطأ أثناء إضافة التقييم: ${finalErrorMessage}` 
+          : `Error adding review: ${finalErrorMessage}`);
+      } else {
+        toast.error(language === 'ar' 
+          ? `حدث خطأ أثناء إضافة التقييم: ${errorMessage}` 
+          : `Error adding review: ${errorMessage}`);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -613,6 +621,15 @@ const HomePage: React.FC = () => {
                               onClick={() => setSelectedMeal(meal)}
                               className="group bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer relative"
                             >
+                              {/* Discount Badge - Top Ribbon */}
+                              {meal.isDiscountActive && meal.discountPercentage && (
+                                <div className="absolute -top-[5px] -left-[24px] z-10">
+                                  <div className="bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold px-5 pt-[9px] pb-[2px] shadow-md transform -rotate-[46deg] origin-center">
+                                    -{meal.discountPercentage}%
+                                  </div>
+                                </div>
+                              )}
+                              
                               {isVeryFirstMeal && showTapIndicator && (
                                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 animate-pulse z-10">
                                   {customPointerSvg}
@@ -648,6 +665,22 @@ const HomePage: React.FC = () => {
                                       </p>
                                     </div>
 
+                                    {/* Price moved here - directly under description */}
+                                    <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="text-[12px] font-bold text-primary mb-1">
+                                      {meal.isDiscountActive && meal.discountedPrice ? (
+                                        <div className="flex items-center gap-1">
+                                          <span className="line-through text-gray-400">
+                                            {meal.price} EGP
+                                          </span>
+                                          <span>
+                                            {meal.discountedPrice} EGP
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        `${meal.price} EGP`
+                                      )}
+                                    </div>
+
                                     {meal.preparationTime && (
                                       <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="flex items-center text-gray-500 text-xs mb-1">
                                         <Clock className="w-3 h-3 mx-1" />
@@ -661,25 +694,7 @@ const HomePage: React.FC = () => {
                                     )}
                                   </div>
 
-                                  <div className="flex justify-between items-end">
-                                    <div className="text-[12px] font-bold text-primary">
-                                      {meal.isDiscountActive && meal.discountedPrice ? (
-                                        <div className="flex items-center gap-1">
-                                          <span className="line-through text-gray-400">
-                                            {meal.price} EGP
-                                          </span>
-                                          <span>
-                                            {meal.discountedPrice} EGP
-                                          </span>
-                                          <span className="text-orange-600 text-xs">
-                                            -{meal.discountPercentage}%
-                                          </span>
-                                        </div>
-                                      ) : (
-                                        `${meal.price} EGP`
-                                      )}
-                                    </div>
-
+                                  <div className={`flex ${language === 'ar' ? 'justify-end' : 'justify-start'} items-end`}>
                                     <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="flex items-center gap-2">
                                       {meal.reviews && meal.reviews.length > 0 ? (
                                         <>
@@ -690,7 +705,8 @@ const HomePage: React.FC = () => {
                                             meal.reviews.reduce(
                                               (sum, review) => sum + review.rating,
                                               0
-                                            ) / meal.reviews.length
+                                            ) / meal.reviews.length,
+                                            language
                                           )}
                                         </>
                                       ) : (
@@ -712,95 +728,116 @@ const HomePage: React.FC = () => {
               ) : (
                 // Show meals for selected category only
                 <div className="grid grid-cols-1 gap-4" dir="ltr">
-                  {filteredMeals.map((meal) => (
-                    <div
-                      key={meal._id}
-                      onClick={() => setSelectedMeal(meal)}
-                      className="group bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer"
-                    >
-                      <div className="flex">
-                        <div className="w-1/3 relative overflow-hidden h-full">
-                          <Image
-                            src={meal.image || "/placeholder.svg"}
-                            alt={language === 'ar' ? meal.name?.ar || '' : meal.name?.en || ''}
-                            className="h-[110px] w-[110px] object-cover object-center group-hover:scale-105 transition-transform duration-500 p-[12px] rounded-[15px]"
-                            width={200}
-                            height={200}
-                          />
-                          {meal.isNew && (
-                            <div className="absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                              {language === 'ar' ? "جديد" : "New"}
+                  {filteredMeals.map((meal, index) => {
+                    const isVeryFirstMeal = index === 0 && !isFirstMealShown;
+                    if (isVeryFirstMeal) {
+                      setTimeout(() => setIsFirstMealShown(true), 15000);
+                    }
+                    
+                    return (
+                      <div
+                        key={meal._id}
+                        onClick={() => setSelectedMeal(meal)}
+                        className="group bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer relative"
+                      >
+                        {/* Discount Badge - Top Ribbon */}
+                        {meal.isDiscountActive && meal.discountPercentage && (
+                          <div className="absolute -top-[5px] -left-[24px] z-10">
+                            <div className="bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold px-5 pt-[9px] pb-[2px] shadow-md transform -rotate-[46deg] origin-center">
+                              -{meal.discountPercentage}%
                             </div>
-                          )}
-                        </div>
-
-                        <div className="w-2/3 p-3 flex flex-col justify-between">
-                          <div>
-                            <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="mb-1">
-                              <h2 className="text-[12px] font-bold text-gray-800 mb-1">
-                                {language === 'ar' ? meal.name?.ar || '' : meal.name?.en || ''}
-                              </h2>
-                              <p className="text-gray-600 text-xs line-clamp-2 mb-[7px]">
-                                {language === 'ar' ? meal.description?.ar || '' : meal.description?.en || ''}
-                              </p>
-                            </div>
-
-                            {meal.preparationTime && (
-                              <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="flex items-center text-gray-500 text-xs mb-1">
-                                <Clock className="w-3 h-3 mx-1" />
-                                <span>
-                                  {language === 'ar' 
-                                    ? `${meal.preparationTime} دقيقة`
-                                    : `${meal.preparationTime} minutes`
-                                  }
-                                </span>
+                          </div>
+                        )}
+                        
+                        {isVeryFirstMeal && showTapIndicator && (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 animate-pulse z-10">
+                            {customPointerSvg}
+                            <span className="text-white text-sm font-medium">
+                              {language === 'ar' ? 'انقر للتفاصيل' : 'Tap for details'}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex">
+                          <div className="w-1/3 relative overflow-hidden h-full">
+                            <Image
+                              src={meal.image || "/placeholder.svg"}
+                              alt={language === 'ar' ? meal.name?.ar || '' : meal.name?.en || ''}
+                              className="h-[110px] w-[110px] object-cover object-center group-hover:scale-105 transition-transform duration-500 p-[12px] rounded-[15px]"
+                              width={200}
+                              height={200}
+                            />
+                            {meal.isNew && (
+                              <div className="absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                {language === 'ar' ? "جديد" : "New"}
                               </div>
                             )}
                           </div>
 
-                          <div className="flex justify-between items-end">
-                            <div className="text-[12px] font-bold text-primary">
-                              {meal.isDiscountActive && meal.discountedPrice ? (
-                                <div className="flex items-center gap-1">
-                                  <span className="line-through text-gray-400">
-                                    {meal.price} EGP
-                                  </span>
+                          <div className="w-2/3 p-3 flex flex-col justify-between">
+                            <div>
+                              <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="mb-1">
+                                <h2 className="text-[12px] font-bold text-gray-800 mb-1">
+                                  {language === 'ar' ? meal.name?.ar || '' : meal.name?.en || ''}
+                                </h2>
+                                <p className="text-gray-600 text-xs line-clamp-2 mb-[7px]">
+                                  {language === 'ar' ? meal.description?.ar || '' : meal.description?.en || ''}
+                                </p>
+                              </div>
+                              <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="text-[12px] font-bold text-primary mb-1">
+                                {meal.isDiscountActive && meal.discountedPrice ? (
+                                  <div className="flex items-center gap-1">
+                                    <span className="line-through text-gray-400">
+                                      {meal.price} EGP
+                                    </span>
+                                    <span>
+                                      {meal.discountedPrice} EGP
+                                    </span>
+                                  </div>
+                                ) : (
+                                  `${meal.price} EGP`
+                                )}
+                              </div>
+
+                              {meal.preparationTime && (
+                                <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="flex items-center text-gray-500 text-xs mb-1">
+                                  <Clock className="w-3 h-3 mx-1" />
                                   <span>
-                                    {meal.discountedPrice} EGP
-                                  </span>
-                                  <span className="text-orange-600 text-xs">
-                                    -{meal.discountPercentage}%
+                                    {language === 'ar' 
+                                      ? `${meal.preparationTime} دقيقة`
+                                      : `${meal.preparationTime} minutes`
+                                    }
                                   </span>
                                 </div>
-                              ) : (
-                                `${meal.price} EGP`
                               )}
                             </div>
 
-                            <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="flex items-center gap-2">
-                              {meal.reviews && meal.reviews.length > 0 ? (
-                                <>
+                            <div className={`flex ${language === 'ar' ? 'justify-end' : 'justify-start'} items-end`}>
+                              <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="flex items-center gap-2">
+                                {meal.reviews && meal.reviews.length > 0 ? (
+                                  <>
+                                    <span className="text-[10px] text-gray-500">
+                                      ({meal.reviews.length})
+                                    </span>
+                                    {renderStars(
+                                      meal.reviews.reduce(
+                                        (sum, review) => sum + review.rating,
+                                        0
+                                      ) / meal.reviews.length,
+                                      language
+                                    )}
+                                  </>
+                                ) : (
                                   <span className="text-[10px] text-gray-500">
-                                    ({meal.reviews.length})
+                                    {language === 'ar' ? "لا توجد تقييمات" : "No reviews"}
                                   </span>
-                                  {renderStars(
-                                    meal.reviews.reduce(
-                                      (sum, review) => sum + review.rating,
-                                      0
-                                    ) / meal.reviews.length
-                                  )}
-                                </>
-                              ) : (
-                                <span className="text-[10px] text-gray-500">
-                                  {language === 'ar' ? "لا توجد تقييمات" : "No reviews"}
-                                </span>
-                              )}
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

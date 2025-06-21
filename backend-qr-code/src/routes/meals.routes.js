@@ -1,5 +1,5 @@
 import express from 'express';
-import { getMeals, createMeal, getMealById, updateMeal, deleteMeal, addReview, updateReview, deleteReview, setDiscount, removeDiscount, getActiveDiscounts, cleanupExpiredDiscounts } from '../controllers/meals.controller.js';
+import { getMeals, createMeal, getMealById, updateMeal, deleteMeal, addReview, updateReview, deleteReview, setDiscount, removeDiscount, getActiveDiscounts, cleanupExpiredDiscounts, bulkSetDiscount, bulkDeleteMeals } from '../controllers/meals.controller.js';
 import multer from '../utils/cloudinary.js';
 import { authenticate } from '../middleware/auth.js';
 import { authenticateRestaurantToken } from '../middleware/restaurantAuth.js';
@@ -48,8 +48,12 @@ router.get('/restaurant/:subdomain', async (req, res) => {
 router.get('/', authenticateRestaurantToken, requireActiveSubscription, getMeals);
 router.get('/:id', authenticateRestaurantToken, requireActiveSubscription, getMealById);
 
+// ✅ Bulk operations routes
+router.post('/bulk-discount', authenticateRestaurantToken, requireActiveSubscription, bulkSetDiscount);
+
 router.post('/', authenticate, requireActiveSubscription, multer.single('image'), createMeal);
 router.put('/:id', authenticate, requireActiveSubscription, multer.single('image'), updateMeal);
+router.delete('/bulk-delete', authenticateRestaurantToken, requireActiveSubscription, bulkDeleteMeals);
 router.delete('/:id', authenticate, requireActiveSubscription, deleteMeal);
 
 // Review routes
@@ -62,5 +66,9 @@ router.post('/:id/discount', authenticateRestaurantToken, requireActiveSubscript
 router.delete('/:id/discount', authenticateRestaurantToken, requireActiveSubscription, removeDiscount);
 router.get('/discounts/active', authenticateRestaurantToken, requireActiveSubscription, getActiveDiscounts);
 router.post('/discounts/cleanup', authenticateRestaurantToken, requireActiveSubscription, cleanupExpiredDiscounts);
+
+
+
+
 
 export default router;

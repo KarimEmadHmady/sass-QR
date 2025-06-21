@@ -92,6 +92,18 @@ const MealsPage = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeCategory, setActiveCategory] = useState('all');
   const [language, setLanguage] = useState<'en' | 'ar'>('ar');
+  
+  // Bulk selection state
+  const [selectedMeals, setSelectedMeals] = useState<string[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
+  const [discountData, setDiscountData] = useState({
+    percentage: 10,
+    startDate: '',
+    endDate: ''
+  });
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   useEffect(() => {
     const fetchMeals = async () => {
@@ -162,6 +174,11 @@ const MealsPage = () => {
     fetchMeals();
   }, [token, isAuthenticated, language]);
 
+  // Update showBulkActions when selectedMeals changes
+  useEffect(() => {
+    setShowBulkActions(selectedMeals.length > 0);
+  }, [selectedMeals]);
+
   const deleteMeal = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this meal?")) {
       try {
@@ -181,6 +198,154 @@ const MealsPage = () => {
         console.error("Error deleting meal:", err);
         toast.error("Failed to delete meal. Please try again later.");
       }
+    }
+  };
+
+  // Bulk operations functions
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedMeals([]);
+      setSelectAll(false);
+    } else {
+      setSelectedMeals(filteredMeals.map(meal => meal._id));
+      setSelectAll(true);
+    }
+  };
+
+  const handleSelectMeal = (mealId: string) => {
+    if (selectedMeals.includes(mealId)) {
+      setSelectedMeals(selectedMeals.filter(id => id !== mealId));
+      setSelectAll(false);
+    } else {
+      setSelectedMeals([...selectedMeals, mealId]);
+      // Check if all filtered meals are selected
+      if (selectedMeals.length + 1 === filteredMeals.length) {
+        setSelectAll(true);
+      }
+    }
+  };
+
+  const handleBulkDiscount = async () => {
+    if (!discountData.startDate || !discountData.endDate) {
+      toast.error(language === 'ar' ? 'يرجى تحديد تاريخ البداية والنهاية' : 'Please select start and end dates');
+      return;
+    }
+
+    try {
+      setBulkLoading(true);
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/meals/bulk-discount`,
+        {
+          mealIds: selectedMeals,
+          discountPercentage: discountData.percentage,
+          discountStartDate: discountData.startDate,
+          discountEndDate: discountData.endDate
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      toast.success(language === 'ar' 
+        ? `تم تطبيق الخصم على ${response.data.modifiedCount} وجبة بنجاح`
+        : `Discount applied successfully to ${response.data.modifiedCount} meals`
+      );
+
+      // Refresh meals data
+      const mealsResponse = await axios.get<ApiResponse[]>(`${process.env.NEXT_PUBLIC_API_URL}/meals`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      const transformedMeals: Meal[] = mealsResponse.data.map((meal: ApiResponse) => ({
+        _id: meal._id,
+        name: {
+          en: meal.name?.en || '',
+          ar: meal.name?.ar || ''
+        },
+        description: {
+          en: meal.description?.en || '',
+          ar: meal.description?.ar || ''
+        },
+        price: meal.price || 0,
+        discountedPrice: meal.discountedPrice,
+        discountPercentage: meal.discountPercentage,
+        discountStartDate: meal.discountStartDate,
+        discountEndDate: meal.discountEndDate,
+        isDiscountActive: meal.isDiscountActive,
+        image: meal.image || '',
+        category: {
+          _id: meal.category?._id || '',
+          name: {
+            en: meal.category?.name?.en || '',
+            ar: meal.category?.name?.ar || ''
+          }
+        },
+        reviews: meal.reviews || []
+      }));
+
+      setMeals(transformedMeals);
+      setSelectedMeals([]);
+      setSelectAll(false);
+      setShowDiscountModal(false);
+      setDiscountData({ percentage: 10, startDate: '', endDate: '' });
+
+    } catch (err: unknown) {
+      console.error("Error applying bulk discount:", err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      toast.error(language === 'ar' 
+        ? 'فشل في تطبيق الخصم. يرجى المحاولة مرة أخرى.'
+        : errorMessage
+      );
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(language === 'ar' 
+      ? `هل أنت متأكد من حذف ${selectedMeals.length} وجبة؟`
+      : `Are you sure you want to delete ${selectedMeals.length} meals?`
+    )) {
+      return;
+    }
+
+    try {
+      setBulkLoading(true);
+      const response = await axios.delete(
+        `${process.env.NEXT_PUBLIC_API_URL}/meals/bulk-delete`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          data: {
+            mealIds: selectedMeals
+          }
+        }
+      );
+
+      toast.success(language === 'ar' 
+        ? `تم حذف ${response.data.deletedCount} وجبة بنجاح`
+        : `Successfully deleted ${response.data.deletedCount} meals`
+      );
+
+      // Remove deleted meals from state
+      setMeals(meals.filter(meal => !selectedMeals.includes(meal._id)));
+      setSelectedMeals([]);
+      setSelectAll(false);
+
+    } catch (err: unknown) {
+      console.error("Error deleting meals:", err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      toast.error(language === 'ar' 
+        ? 'فشل في حذف الوجبات. يرجى المحاولة مرة أخرى.'
+        : errorMessage
+      );
+    } finally {
+      setBulkLoading(false);
     }
   };
 
@@ -286,7 +451,46 @@ const MealsPage = () => {
         </div>
       </div>
 
-   
+      {/* Bulk Actions Bar */}
+      {showBulkActions && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-blue-800">
+                {language === 'ar' 
+                  ? `${selectedMeals.length} وجبة محددة`
+                  : `${selectedMeals.length} meals selected`
+                }
+              </span>
+              <button
+                onClick={() => {
+                  setSelectedMeals([]);
+                  setSelectAll(false);
+                }}
+                className="text-sm text-blue-600 hover:text-blue-800 underline"
+              >
+                {language === 'ar' ? 'إلغاء التحديد' : 'Clear selection'}
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowDiscountModal(true)}
+                disabled={bulkLoading}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                {language === 'ar' ? 'إضافة خصم' : 'Add Discount'}
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                disabled={bulkLoading}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                {language === 'ar' ? 'حذف المحدد' : 'Delete Selected'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Meals Grid */}
       {error ? (
@@ -306,13 +510,66 @@ const MealsPage = () => {
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+          {/* Select All Header */}
+          <div className="p-4 border-b border-gray-100 bg-gray-50">
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={selectAll}
+                    onChange={handleSelectAll}
+                    className="sr-only"
+                  />
+                  <div className={`w-5 h-5 border-2 rounded-md transition-all duration-200 flex items-center justify-center ${
+                    selectAll 
+                      ? 'bg-blue-600 border-blue-600' 
+                      : 'bg-white border-gray-300 group-hover:border-blue-400'
+                  }`}>
+                    {selectAll && (
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600 transition-colors">
+                  {language === 'ar' ? 'تحديد الكل' : 'Select All'}
+                </span>
+              </label>
+            </div>
+          </div>
+          
           <div className="divide-y divide-gray-100">
             {filteredMeals.map((meal) => (
               <div
                 key={meal._id}
                 className={`p-4 hover:bg-gray-50 transition-all duration-200 ease-in-out transform hover:scale-[1.01] hover:shadow-md ${language === 'ar' ? 'flex-row-reverse' : 'flex-row'} flex items-center gap-4 border-b border-gray-100 last:border-b-0`}
               >
-                <div className="relative w-16 h-16 flex-shrink-0 group">
+                {/* Checkbox */}
+                <label className="flex items-center cursor-pointer group">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={selectedMeals.includes(meal._id)}
+                      onChange={() => handleSelectMeal(meal._id)}
+                      className="sr-only"
+                    />
+                    <div className={`w-5 h-5 border-2 rounded-md transition-all duration-200 flex items-center justify-center ${
+                      selectedMeals.includes(meal._id)
+                        ? 'bg-blue-600 border-blue-600' 
+                        : 'bg-white border-gray-300 group-hover:border-blue-400'
+                    }`}>
+                      {selectedMeals.includes(meal._id) && (
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                </label>
+                
+                <div className="relative w-[auto] h-[auto] flex-shrink-0 group">
                   <Image
                     src={meal.image || "/placeholder.svg"}
                     alt={language === 'ar' ? meal.name?.ar : meal.name?.en}
@@ -423,6 +680,79 @@ const MealsPage = () => {
       >
         {language === 'ar' ? '+ إضافة وجبة جديدة' : '+ Add New Meal'}
       </Link>
+
+      {/* Discount Modal */}
+      {showDiscountModal && (
+        <div className="fixed inset-0 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-4">
+              {language === 'ar' ? 'إضافة خصم جماعي' : 'Add Bulk Discount'}
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {language === 'ar' ? 'نسبة الخصم (%)' : 'Discount Percentage (%)'}
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={discountData.percentage}
+                  onChange={(e) => setDiscountData({...discountData, percentage: parseInt(e.target.value) || 0})}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {language === 'ar' ? 'تاريخ البداية' : 'Start Date'}
+                </label>
+                <input
+                  type="datetime-local"
+                  value={discountData.startDate}
+                  onChange={(e) => setDiscountData({...discountData, startDate: e.target.value})}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {language === 'ar' ? 'تاريخ النهاية' : 'End Date'}
+                </label>
+                <input
+                  type="datetime-local"
+                  value={discountData.endDate}
+                  onChange={(e) => setDiscountData({...discountData, endDate: e.target.value})}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => {
+                  setShowDiscountModal(false);
+                  setDiscountData({ percentage: 10, startDate: '', endDate: '' });
+                }}
+                className="px-4 py-2 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300"
+              >
+                {language === 'ar' ? 'إلغاء' : 'Cancel'}
+              </button>
+              <button
+                onClick={handleBulkDiscount}
+                disabled={bulkLoading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              >
+                {bulkLoading 
+                  ? (language === 'ar' ? 'جاري التطبيق...' : 'Applying...')
+                  : (language === 'ar' ? 'تطبيق الخصم' : 'Apply Discount')
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

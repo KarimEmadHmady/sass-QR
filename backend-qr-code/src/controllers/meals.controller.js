@@ -517,3 +517,108 @@ export const cleanupExpiredDiscounts = async (req, res, next) => {
     next(error);
   }
 };
+
+// ✅ دالة إضافة خصم جماعي للوجبات المحددة
+export const bulkSetDiscount = async (req, res, next) => {
+  try {
+    const { mealIds, discountPercentage, discountStartDate, discountEndDate } = req.body;
+
+    // التحقق من البيانات المطلوبة
+    if (!mealIds || !Array.isArray(mealIds) || mealIds.length === 0) {
+      return res.status(400).json({ 
+        message: 'Please provide an array of meal IDs' 
+      });
+    }
+
+    if (!discountPercentage || discountPercentage < 0 || discountPercentage > 100) {
+      return res.status(400).json({ 
+        message: 'Discount percentage must be between 0 and 100' 
+      });
+    }
+
+    if (!discountStartDate || !discountEndDate) {
+      return res.status(400).json({ 
+        message: 'Discount start and end dates are required' 
+      });
+    }
+
+    const startDate = new Date(discountStartDate);
+    const endDate = new Date(discountEndDate);
+    
+    if (startDate >= endDate) {
+      return res.status(400).json({ 
+        message: 'Discount end date must be after start date' 
+      });
+    }
+    
+    if (startDate < new Date()) {
+      return res.status(400).json({ 
+        message: 'Discount start date cannot be in the past' 
+      });
+    }
+
+    // تحديث جميع الوجبات المحددة
+    const result = await Meal.updateMany(
+      {
+        _id: { $in: mealIds },
+        restaurant: req.restaurant.id
+      },
+      {
+        discountPercentage,
+        discountStartDate: startDate,
+        discountEndDate: endDate
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ 
+        message: 'No meals found with the provided IDs' 
+      });
+    }
+
+    res.json({
+      message: `Discount applied successfully to ${result.modifiedCount} meals`,
+      modifiedCount: result.modifiedCount,
+      matchedCount: result.matchedCount
+    });
+
+  } catch (error) {
+    console.error('Bulk discount error:', error);
+    next(error);
+  }
+};
+
+// ✅ دالة حذف جماعي للوجبات المحددة
+export const bulkDeleteMeals = async (req, res, next) => {
+  try {
+    const { mealIds } = req.body;
+
+    // التحقق من البيانات المطلوبة
+    if (!mealIds || !Array.isArray(mealIds) || mealIds.length === 0) {
+      return res.status(400).json({ 
+        message: 'Please provide an array of meal IDs' 
+      });
+    }
+
+    // حذف جميع الوجبات المحددة
+    const result = await Meal.deleteMany({
+      _id: { $in: mealIds },
+      restaurant: req.restaurant.id
+    });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ 
+        message: 'No meals found with the provided IDs' 
+      });
+    }
+
+    res.json({
+      message: `Successfully deleted ${result.deletedCount} meals`,
+      deletedCount: result.deletedCount
+    });
+
+  } catch (error) {
+    console.error('Bulk delete error:', error);
+    next(error);
+  }
+};

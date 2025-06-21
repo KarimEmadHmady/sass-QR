@@ -2,7 +2,7 @@
 
 import { useLanguage } from "@/contexts/LanguageContext";
 import Link from "next/link";
-import { FaQrcode, FaChartLine, FaUsers, FaMobileAlt, FaShieldAlt, FaClock, FaCheck, FaUtensils, FaStar, FaGlobe, FaCog } from 'react-icons/fa';
+import { FaQrcode, FaChartLine, FaUsers, FaMobileAlt, FaShieldAlt, FaClock, FaCheck, FaUtensils, FaStar, FaGlobe, FaCog, FaPercent } from 'react-icons/fa';
 import { SiGoogle } from 'react-icons/si';
 import AnimatedBackground from "./AnimatedBackground";
 import SystemPreviewSlider from "./SystemPreviewSlider";
@@ -79,9 +79,9 @@ const translations = {
           description: "Customize your menu's look and feel"
         },
         {
-          icon: <FaQrcode className="w-8 h-8" />,
-          title: "Multiple QR Codes",
-          description: "Generate different QR codes for different areas"
+          icon: <FaPercent className="w-8 h-8" />,
+          title: "Discount Program",
+          description: "Create and manage discount campaigns easily"
         }
       ]
     },
@@ -210,9 +210,9 @@ const translations = {
           description: "خصص مظهر قائمتك بسهولة"
         },
         {
-          icon: <FaQrcode className="w-8 h-8" />,
-          title: "رموز QR متعددة",
-          description: "أنشئ رموز QR مختلفة لمناطق مختلفة"
+          icon: <FaPercent className="w-8 h-8" />,
+          title: "برنامج الخصم",
+          description: "أنشئ وأدر حملات الخصم بسهولة"
         }
       ]
     },
@@ -223,7 +223,7 @@ const translations = {
         {
           name: "تجربة مجانية",
           price: "0",
-          duration: "7 أيام",
+          duration: " أيام 7",
           features: [
             "إنشاء قائمة رقمية",
             "إنشاء رمز QR",
