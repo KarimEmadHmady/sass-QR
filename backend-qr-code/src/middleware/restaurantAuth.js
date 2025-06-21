@@ -23,7 +23,7 @@ export const authenticateRestaurant = async (req, res, next) => {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
     console.log('Decoded token:', decoded);
 
     // Find restaurant by ID

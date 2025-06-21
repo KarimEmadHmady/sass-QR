@@ -1,5 +1,5 @@
 import express from 'express';
-import { getMeals, createMeal, getMealById, updateMeal, deleteMeal, addReview, updateReview, deleteReview } from '../controllers/meals.controller.js';
+import { getMeals, createMeal, getMealById, updateMeal, deleteMeal, addReview, updateReview, deleteReview, setDiscount, removeDiscount, getActiveDiscounts, cleanupExpiredDiscounts } from '../controllers/meals.controller.js';
 import multer from '../utils/cloudinary.js';
 import { authenticate } from '../middleware/auth.js';
 import { authenticateRestaurantToken } from '../middleware/restaurantAuth.js';
@@ -29,7 +29,15 @@ router.get('/restaurant/:subdomain', async (req, res) => {
       return res.status(404).json({ message: 'No meals found for this restaurant' });
     }
 
-    res.json(meals);
+    // Add isDiscountActive and discountedPrice to each meal
+    const mealsWithDiscounts = meals.map(meal => {
+      const mealObj = meal.toObject();
+      mealObj.isDiscountActive = meal.isDiscountActive();
+      mealObj.discountedPrice = meal.discountedPrice;
+      return mealObj;
+    });
+
+    res.json(mealsWithDiscounts);
   } catch (error) {
     console.error('Error fetching restaurant meals:', error);
     res.status(500).json({ message: 'Error fetching meals' });
@@ -48,5 +56,11 @@ router.delete('/:id', authenticate, requireActiveSubscription, deleteMeal);
 router.post('/:id/reviews', authenticate, addReview);
 router.put('/:mealId/reviews/:reviewId', authenticateRestaurantToken, requireActiveSubscription, updateReview);
 router.delete('/:mealId/reviews/:reviewId', authenticate, requireActiveSubscription, deleteReview);
+
+// ✅ Discount routes
+router.post('/:id/discount', authenticateRestaurantToken, requireActiveSubscription, setDiscount);
+router.delete('/:id/discount', authenticateRestaurantToken, requireActiveSubscription, removeDiscount);
+router.get('/discounts/active', authenticateRestaurantToken, requireActiveSubscription, getActiveDiscounts);
+router.post('/discounts/cleanup', authenticateRestaurantToken, requireActiveSubscription, cleanupExpiredDiscounts);
 
 export default router;

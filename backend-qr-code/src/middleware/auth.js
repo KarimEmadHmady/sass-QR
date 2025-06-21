@@ -12,7 +12,7 @@ export const authenticate = async (req, res, next) => {
       return res.status(401).json({ message: 'No token, authorization denied' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
     console.log('Decoded token:', decoded);
 
     if (!decoded.role || decoded.role === 'restaurant') {

@@ -4,7 +4,16 @@ import Category from '../models/Category.js';
 export const getMeals = async (req, res, next) => {
   try {
     const meals = await Meal.find({ restaurant: req.restaurant.id }).populate('category');
-    res.json(meals);
+    
+    // Add isDiscountActive and discountedPrice to each meal
+    const mealsWithDiscounts = meals.map(meal => {
+      const mealObj = meal.toObject();
+      mealObj.isDiscountActive = meal.isDiscountActive();
+      mealObj.discountedPrice = meal.discountedPrice;
+      return mealObj;
+    });
+    
+    res.json(mealsWithDiscounts);
   } catch (error) {
     next(error);  
   }
@@ -12,13 +21,45 @@ export const getMeals = async (req, res, next) => {
 
 export const createMeal = async (req, res, next) => {
   try {
-    const { name, description, price, categoryId } = req.body;
+    const { name, description, price, categoryId, discountPercentage, discountStartDate, discountEndDate } = req.body;
     const imageUrl = req.file?.path;
 
     if (!name?.en || !name?.ar || !description?.en || !description?.ar || !price || !imageUrl || !categoryId) {
       return res.status(400).json({ 
         message: 'Please provide all required fields including name and description in both English and Arabic, price, image, and category.' 
       });
+    }
+
+    // Validate discount fields
+    if (discountPercentage !== undefined) {
+      if (discountPercentage < 0 || discountPercentage > 100) {
+        return res.status(400).json({ 
+          message: 'Discount percentage must be between 0 and 100' 
+        });
+      }
+      
+      if (discountPercentage > 0) {
+        if (!discountStartDate || !discountEndDate) {
+          return res.status(400).json({ 
+            message: 'Discount start and end dates are required when setting a discount percentage' 
+          });
+        }
+        
+        const startDate = new Date(discountStartDate);
+        const endDate = new Date(discountEndDate);
+        
+        if (startDate >= endDate) {
+          return res.status(400).json({ 
+            message: 'Discount end date must be after start date' 
+          });
+        }
+        
+        if (startDate < new Date()) {
+          return res.status(400).json({ 
+            message: 'Discount start date cannot be in the past' 
+          });
+        }
+      }
     }
 
     // Verify that the category exists and belongs to this restaurant
@@ -46,11 +87,20 @@ export const createMeal = async (req, res, next) => {
       price: parseFloat(price),
       rating: 0,
       reviews: [],
+      discountPercentage: discountPercentage || 0,
+      discountStartDate: discountStartDate ? new Date(discountStartDate) : null,
+      discountEndDate: discountEndDate ? new Date(discountEndDate) : null
     });
 
     const savedMeal = await newMeal.save();
     const populatedMeal = await savedMeal.populate('category');
-    res.status(201).json(populatedMeal);
+    
+    // Add isDiscountActive and discountedPrice to the response
+    const mealObj = populatedMeal.toObject();
+    mealObj.isDiscountActive = populatedMeal.isDiscountActive();
+    mealObj.discountedPrice = populatedMeal.discountedPrice;
+    
+    res.status(201).json(mealObj);
 
   } catch (error) {
     console.log('Request file:', req.file);
@@ -71,7 +121,12 @@ export const getMealById = async (req, res, next) => {
       return res.status(404).json({ message: 'Meal not found' });
     }
 
-    res.json(meal);
+    // Add isDiscountActive and discountedPrice to the meal
+    const mealObj = meal.toObject();
+    mealObj.isDiscountActive = meal.isDiscountActive();
+    mealObj.discountedPrice = meal.discountedPrice;
+
+    res.json(mealObj);
 
   } catch (error) {
     next(error);
@@ -80,7 +135,7 @@ export const getMealById = async (req, res, next) => {
 
 export const updateMeal = async (req, res, next) => {
   try {
-    const { name, description, price, categoryId } = req.body;
+    const { name, description, price, categoryId, discountPercentage, discountStartDate, discountEndDate } = req.body;
     const imageUrl = req.file?.path;
 
     const meal = await Meal.findOne({
@@ -90,6 +145,38 @@ export const updateMeal = async (req, res, next) => {
 
     if (!meal) {
       return res.status(404).json({ message: 'Meal not found' });
+    }
+
+    // Validate discount fields
+    if (discountPercentage !== undefined) {
+      if (discountPercentage < 0 || discountPercentage > 100) {
+        return res.status(400).json({ 
+          message: 'Discount percentage must be between 0 and 100' 
+        });
+      }
+      
+      if (discountPercentage > 0) {
+        if (!discountStartDate || !discountEndDate) {
+          return res.status(400).json({ 
+            message: 'Discount start and end dates are required when setting a discount percentage' 
+          });
+        }
+        
+        const startDate = new Date(discountStartDate);
+        const endDate = new Date(discountEndDate);
+        
+        if (startDate >= endDate) {
+          return res.status(400).json({ 
+            message: 'Discount end date must be after start date' 
+          });
+        }
+        
+        if (startDate < new Date()) {
+          return res.status(400).json({ 
+            message: 'Discount start date cannot be in the past' 
+          });
+        }
+      }
     }
 
     if (categoryId) {
@@ -122,9 +209,22 @@ export const updateMeal = async (req, res, next) => {
     meal.price = price ? parseFloat(price) : meal.price;
     if (imageUrl) meal.image = imageUrl;
 
+    // Update discount fields
+    if (discountPercentage !== undefined) {
+      meal.discountPercentage = discountPercentage;
+      meal.discountStartDate = discountStartDate ? new Date(discountStartDate) : null;
+      meal.discountEndDate = discountEndDate ? new Date(discountEndDate) : null;
+    }
+
     const updatedMeal = await meal.save();
     const populatedMeal = await updatedMeal.populate('category');
-    res.json(populatedMeal);
+    
+    // Add isDiscountActive and discountedPrice to the response
+    const mealObj = populatedMeal.toObject();
+    mealObj.isDiscountActive = populatedMeal.isDiscountActive();
+    mealObj.discountedPrice = populatedMeal.discountedPrice;
+    
+    res.json(mealObj);
 
   } catch (error) {
     next(error); 
@@ -271,6 +371,148 @@ export const deleteReview = async (req, res, next) => {
 
     await meal.save();
     res.json({ message: 'Review deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ✅ دالة إضافة خصم للوجبة
+export const setDiscount = async (req, res, next) => {
+  try {
+    const { discountPercentage, discountStartDate, discountEndDate } = req.body;
+
+    // التحقق من وجود الوجبة
+    const meal = await Meal.findOne({
+      _id: req.params.id,
+      restaurant: req.restaurant.id
+    });
+
+    if (!meal) {
+      return res.status(404).json({ message: 'Meal not found' });
+    }
+
+    // التحقق من صحة بيانات الخصم
+    if (!discountPercentage || discountPercentage < 0 || discountPercentage > 100) {
+      return res.status(400).json({ 
+        message: 'Discount percentage must be between 0 and 100' 
+      });
+    }
+
+    if (!discountStartDate || !discountEndDate) {
+      return res.status(400).json({ 
+        message: 'Discount start and end dates are required' 
+      });
+    }
+
+    const startDate = new Date(discountStartDate);
+    const endDate = new Date(discountEndDate);
+    
+    if (startDate >= endDate) {
+      return res.status(400).json({ 
+        message: 'Discount end date must be after start date' 
+      });
+    }
+    
+    if (startDate < new Date()) {
+      return res.status(400).json({ 
+        message: 'Discount start date cannot be in the past' 
+      });
+    }
+
+    // تحديث بيانات الخصم
+    meal.discountPercentage = discountPercentage;
+    meal.discountStartDate = startDate;
+    meal.discountEndDate = endDate;
+
+    const updatedMeal = await meal.save();
+    const populatedMeal = await updatedMeal.populate('category');
+
+    // Add isDiscountActive and discountedPrice to the response
+    const mealObj = populatedMeal.toObject();
+    mealObj.isDiscountActive = populatedMeal.isDiscountActive();
+    mealObj.discountedPrice = populatedMeal.discountedPrice;
+
+    res.json({
+      message: 'Discount set successfully',
+      meal: mealObj
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ✅ دالة إزالة الخصم من الوجبة
+export const removeDiscount = async (req, res, next) => {
+  try {
+    const meal = await Meal.findOne({
+      _id: req.params.id,
+      restaurant: req.restaurant.id
+    });
+
+    if (!meal) {
+      return res.status(404).json({ message: 'Meal not found' });
+    }
+
+    // إزالة بيانات الخصم
+    meal.discountPercentage = 0;
+    meal.discountStartDate = null;
+    meal.discountEndDate = null;
+
+    const updatedMeal = await meal.save();
+    const populatedMeal = await updatedMeal.populate('category');
+
+    res.json({
+      message: 'Discount removed successfully',
+      meal: populatedMeal
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ✅ دالة جلب الوجبات التي لديها خصم نشط
+export const getActiveDiscounts = async (req, res, next) => {
+  try {
+    const now = new Date();
+    
+    const mealsWithDiscounts = await Meal.find({
+      restaurant: req.restaurant.id,
+      discountPercentage: { $gt: 0 },
+      discountStartDate: { $lte: now },
+      discountEndDate: { $gte: now }
+    }).populate('category');
+
+    // Add isDiscountActive and discountedPrice to each meal
+    const mealsWithDiscountInfo = mealsWithDiscounts.map(meal => {
+      const mealObj = meal.toObject();
+      mealObj.isDiscountActive = meal.isDiscountActive();
+      mealObj.discountedPrice = meal.discountedPrice;
+      return mealObj;
+    });
+
+    res.json({
+      message: 'Active discounts retrieved successfully',
+      meals: mealsWithDiscountInfo,
+      count: mealsWithDiscountInfo.length
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ✅ دالة تنظيف الخصومات المنتهية
+export const cleanupExpiredDiscounts = async (req, res, next) => {
+  try {
+    const result = await Meal.cleanupExpiredDiscounts();
+    
+    res.json({
+      message: 'Expired discounts cleaned up successfully',
+      modifiedCount: result.modifiedCount
+    });
+
   } catch (error) {
     next(error);
   }
