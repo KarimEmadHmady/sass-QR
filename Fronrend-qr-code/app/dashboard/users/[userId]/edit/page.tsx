@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import AnimatedBackground from "@/components/AnimatedBackground";
-import Image from 'next/image';
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 

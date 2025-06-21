@@ -34,6 +34,23 @@ export default function Navbar() {
   const [hasSubdomain, setHasSubdomain] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Add debugging logging
+  useEffect(() => {
+    console.log('Navbar Debug - Auth State:', {
+      isAuthenticated,
+      user: user ? {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      } : null,
+      restaurant: restaurant ? {
+        id: restaurant.id,
+        name: restaurant.name
+      } : null
+    });
+  }, [isAuthenticated, user, restaurant]);
+
   useEffect(() => {
     const fetchRestaurantBySubdomain = async () => {
       try {
@@ -295,7 +312,7 @@ export default function Navbar() {
               )}
               <div className="flex items-center gap-4">
                 <span className="text-gray-700 text-[12px] text-center">
-                  {translations.greeting[language]}, {restaurant ? restaurant.name : user?.name}
+                  {translations.greeting[language]}, {restaurant ? restaurant.name : (user?.name || user?.email?.split('@')[0] || 'User')}
                 </span>
                 <button
                   onClick={handleLogout}

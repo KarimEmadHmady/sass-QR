@@ -33,7 +33,7 @@ export default function SystemPreviewSliderMop() {
         }}
         navigation={true}
         modules={[Autoplay, Pagination, Navigation]}
-        className="mySwiper rounded-[10px] shadow-xl  "
+        className="mySwiper rounded-[10px] "
         dir="ltr"
       >
 <SwiperSlide>

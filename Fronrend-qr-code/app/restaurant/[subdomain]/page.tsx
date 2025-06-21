@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { useSubdomain } from '@/contexts/SubdomainContext';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { QRCodeCanvas } from 'qrcode.react';
@@ -48,11 +47,6 @@ interface Restaurant {
   };
 }
 
-type DescriptionType = {
-  en: string;
-  ar: string;
-};
-
 interface Category {
   id: string;
   name: {
@@ -88,6 +82,38 @@ interface Meal {
   image?: string;
   category: string;
   reviews: Review[];
+}
+
+// API response types
+interface ApiMeal {
+  _id: string;
+  name?: {
+    en: string;
+    ar: string;
+  };
+  description?: {
+    en: string;
+    ar: string;
+  };
+  price: number;
+  image?: string;
+  category?: {
+    _id: string;
+  };
+  reviews?: Review[];
+}
+
+interface ApiCategory {
+  _id: string;
+  name?: {
+    en: string;
+    ar: string;
+  };
+  description?: {
+    en: string;
+    ar: string;
+  };
+  image?: string;
 }
 
 const translations = {
@@ -188,13 +214,10 @@ function getDescriptionObj(desc: string | { en: string; ar: string; } | undefine
 }
 
 export default function RestaurantPage() {
-  const params = useParams();
-  const { subdomain } = useSubdomain();
   const { restaurant: authRestaurant, token } = useAuth();
   const { language } = useLanguage();
   const t = translations[language];
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [stats, setStats] = useState({
     totalCategories: 0,
     totalMeals: 0
@@ -293,7 +316,7 @@ export default function RestaurantPage() {
         if (!isMounted) return;
 
         // Transform the data with proper typing
-        const transformedMeals: Meal[] = mealsData.map((meal: any) => ({
+        const transformedMeals: Meal[] = mealsData.map((meal: ApiMeal) => ({
           id: meal._id,
           name: {
             en: meal.name?.en || '',
@@ -309,7 +332,7 @@ export default function RestaurantPage() {
           reviews: meal.reviews || []
         }));
 
-        const transformedCategories: Category[] = categoriesData.map((category: any) => ({
+        const transformedCategories: Category[] = categoriesData.map((category: ApiCategory) => ({
           id: category._id,
           name: {
             en: category.name?.en || '',
@@ -324,7 +347,6 @@ export default function RestaurantPage() {
         }));
 
         if (isMounted) {
-          setCategories(transformedCategories);
           setStats({
             totalCategories: transformedCategories.length,
             totalMeals: transformedMeals.length
@@ -372,7 +394,7 @@ export default function RestaurantPage() {
 
   const handleEdit = () => {
     if (authRestaurant) {
-      const description = getDescriptionObj(authRestaurant.description as any);
+      const description = getDescriptionObj(authRestaurant.description as string | { en: string; ar: string; } | undefined);
       setEditedRestaurant({
         name: authRestaurant.name,
         phone: authRestaurant.phone || '',

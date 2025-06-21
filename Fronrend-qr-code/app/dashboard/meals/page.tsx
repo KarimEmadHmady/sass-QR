@@ -7,6 +7,7 @@ import AnimatedBackground from "@/components/AnimatedBackground";
 import Image from 'next/image';
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Review {
   _id: string;
@@ -26,6 +27,11 @@ interface Meal {
     ar: string;
   };
   price: number;
+  discountedPrice?: number;
+  discountPercentage?: number;
+  discountStartDate?: string;
+  discountEndDate?: string;
+  isDiscountActive?: boolean;
   image: string;
   category: {
     _id: string;
@@ -48,6 +54,11 @@ interface ApiResponse {
     ar: string;
   };
   price: number;
+  discountedPrice?: number;
+  discountPercentage?: number;
+  discountStartDate?: string;
+  discountEndDate?: string;
+  isDiscountActive?: boolean;
   image: string;
   category: {
     _id: string;
@@ -73,6 +84,7 @@ interface Category {
 }
 
 const MealsPage = () => {
+  const { token, isAuthenticated } = useAuth();
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,8 +97,8 @@ const MealsPage = () => {
     const fetchMeals = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem("token");
-        if (!token) {
+        
+        if (!isAuthenticated || !token) {
           toast.error(language === 'ar' ? 'يجب تسجيل الدخول أولاً' : 'You need to login first');
           return;
         }
@@ -110,6 +122,11 @@ const MealsPage = () => {
             ar: meal.description?.ar || ''
           },
           price: meal.price || 0,
+          discountedPrice: meal.discountedPrice,
+          discountPercentage: meal.discountPercentage,
+          discountStartDate: meal.discountStartDate,
+          discountEndDate: meal.discountEndDate,
+          isDiscountActive: meal.isDiscountActive,
           image: meal.image || '',
           category: {
             _id: meal.category?._id || '',
@@ -143,12 +160,11 @@ const MealsPage = () => {
     };
 
     fetchMeals();
-  }, [language]);
+  }, [token, isAuthenticated, language]);
 
   const deleteMeal = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this meal?")) {
       try {
-        const token = localStorage.getItem("token");
         if (!token) {
           toast.error("You need to be logged in!");
           return;
@@ -312,9 +328,27 @@ const MealsPage = () => {
                         <h3 className="text-base font-medium text-gray-900 truncate group-hover:text-primary transition-colors duration-200">
                           {language === 'ar' ? meal.name?.ar : meal.name?.en}
                         </h3>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 group-hover:bg-green-200 transition-colors duration-200">
-                          {meal.price} {language === 'ar' ? 'جنيه' : 'EGP'}
-                        </span>
+                        
+                        {/* عرض السعر مع الخصم */}
+                        <div className="flex items-center gap-1">
+                          {meal.isDiscountActive && meal.discountedPrice ? (
+                            <>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 group-hover:bg-red-200 transition-colors duration-200 line-through">
+                                {meal.price} {language === 'ar' ? 'جنيه' : 'EGP'}
+                              </span>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 group-hover:bg-green-200 transition-colors duration-200">
+                                {meal.discountedPrice} {language === 'ar' ? 'جنيه' : 'EGP'}
+                              </span>
+                              <span className="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+                                -{meal.discountPercentage}%
+                              </span>
+                            </>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 group-hover:bg-green-200 transition-colors duration-200">
+                              {meal.price} {language === 'ar' ? 'جنيه' : 'EGP'}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <p className="text-sm text-gray-500 mt-0.5">
                         {language === 'ar' ? meal.name?.en : meal.name?.ar}

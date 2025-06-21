@@ -14,10 +14,6 @@ export default function QRCodePage() {
   const [qrUrl, setQrUrl] = useState("");
 
   useEffect(() => {
-    // Get current subdomain from URL
-    const hostname = window.location.hostname;
-    const subdomain = hostname.split('.')[0];
-    
     // Get the origin (protocol + hostname + port)
     const origin = window.location.origin;
     

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import Image from 'next/image';
-import { FaUsers, FaUtensils, FaTags, FaStar, FaQrcode, FaChartLine, FaClock, FaEdit, FaTrash, FaMoneyBill, FaGlobe } from 'react-icons/fa';
+import { FaUtensils, FaTags, FaStar, FaQrcode, FaClock, FaEdit, FaTrash, FaMoneyBill, FaGlobe } from 'react-icons/fa';
 import Link from 'next/link';
 import { toast } from "react-hot-toast";
 import "react-toastify/dist/ReactToastify.css";
@@ -22,6 +22,11 @@ interface Meal {
     ar: string;
   };
   price: number;
+  discountedPrice?: number;
+  discountPercentage?: number;
+  discountStartDate?: string;
+  discountEndDate?: string;
+  isDiscountActive?: boolean;
   image: string;
   category: {
     _id: string;
@@ -50,7 +55,7 @@ interface DashboardStats {
 }
 
 export default function RestaurantDashboard() {
-  const { restaurant, token, isAuthenticated, login } = useAuth();
+  const { token, isAuthenticated, login } = useAuth();
   const router = useRouter();
   const { language } = useLanguage();
   const [meals, setMeals] = useState<Meal[]>([]);
@@ -67,53 +72,113 @@ export default function RestaurantDashboard() {
   const [showSubscriptionWarning, setShowSubscriptionWarning] = useState(false);
 
   useEffect(() => {
-    // Check for token and restaurant data in URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    const restaurantData = urlParams.get('restaurant');
-    
-    if (token && restaurantData && !isAuthenticated) {
-      try {
-        // Parse restaurant data
-        const restaurant = JSON.parse(decodeURIComponent(restaurantData));
-        
-        // Save to localStorage
-        localStorage.setItem('token', token);
-        localStorage.setItem('restaurant', JSON.stringify(restaurant));
-        
-        // Update auth context
-        login(restaurant, token);
-        
-        // Remove data from URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-      } catch (error) {
-        console.error('Error processing auto-login data:', error);
+    const initializeAuth = async () => {
+      // Check for token and restaurant data in URL (auto-login from main domain)
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlToken = urlParams.get('token');
+      const restaurantData = urlParams.get('restaurant');
+      
+      if (urlToken && restaurantData && !isAuthenticated) {
+        try {
+          console.log('Processing auto-login from URL...');
+          // Parse restaurant data
+          const restaurant = JSON.parse(decodeURIComponent(restaurantData));
+          
+          // Save to localStorage
+          localStorage.setItem('token', urlToken);
+          localStorage.setItem('restaurant', JSON.stringify(restaurant));
+          
+          // Update auth context
+          await login(restaurant, urlToken);
+          
+          // Remove data from URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          console.log('Auto-login completed, fetching data...');
+          // Fetch data immediately after login
+          fetchData();
+          return;
+        } catch (error) {
+          console.error('Error processing auto-login data:', error);
+        }
       }
-    }
+
+      // If no URL data but we have localStorage data, try to use it
+      if (!isAuthenticated) {
+        const storedToken = localStorage.getItem('token');
+        const storedRestaurant = localStorage.getItem('restaurant');
+        
+        if (storedToken && storedRestaurant) {
+          try {
+            console.log('Processing stored authentication data...');
+            const restaurant = JSON.parse(storedRestaurant);
+            await login(restaurant, storedToken);
+            console.log('Stored authentication restored, fetching data...');
+            // Fetch data immediately after login
+            fetchData();
+            return;
+          } catch (error) {
+            console.error('Error processing stored data:', error);
+            // Clear invalid data
+            localStorage.removeItem('token');
+            localStorage.removeItem('restaurant');
+          }
+        }
+      }
+      
+      // If we're already authenticated, fetch data
+      if (isAuthenticated && token) {
+        console.log('Already authenticated, fetching data...');
+        fetchData();
+      } else {
+        console.log('Not authenticated, setting loading to false');
+        setLoading(false);
+      }
+    };
 
     const fetchData = async () => {
       try {
-        // Get token from localStorage
-        const storedToken = localStorage.getItem('token');
-        const storedRestaurant = localStorage.getItem('restaurant');
-
-        if (!storedToken || !storedRestaurant) {
+        // Check if user is authenticated
+        if (!isAuthenticated || !token) {
+          console.log('Not authenticated, redirecting to login');
           router.push('/restaurant-login');
           return;
         }
 
+        console.log('Fetching dashboard data...');
+
         // Fetch restaurant profile to get trial information
         const restaurantRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/profile`, {
           headers: {
-            Authorization: `Bearer ${storedToken}`,
+            Authorization: `Bearer ${token}`,
           },
         });
     
         if (!restaurantRes.ok) {
-          throw new Error(`Failed to fetch restaurant profile: ${restaurantRes.status}`);
+          if (restaurantRes.status === 401) {
+            // Token is invalid, redirect to login
+            console.log('Token invalid, redirecting to login');
+            router.push('/restaurant-login');
+            return;
+          }
+          // For other errors, show error but don't redirect
+          console.error(`Failed to fetch restaurant profile: ${restaurantRes.status}`);
+          setStats({
+            totalReviews: 0,
+            totalMeals: 0,
+            totalCategories: 0,
+            averageMealPrice: 0,
+            averageRating: 0,
+            subscriptionStatus: 'trial',
+            trialDaysLeft: 0
+          });
+          setMeals([]);
+          setLoading(false);
+          return;
         }
     
         const restaurantData = await restaurantRes.json();
+        console.log('Restaurant profile fetched successfully');
     
         // Calculate remaining trial days
         const trialEndsAt = new Date(restaurantData.subscription.trialEndsAt);
@@ -132,27 +197,46 @@ export default function RestaurantDashboard() {
         const [mealsRes, categoriesRes] = await Promise.all([
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/meals`, {
             headers: {
-              Authorization: `Bearer ${storedToken}`,
+              Authorization: `Bearer ${token}`,
             },
           }),
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
             headers: {
-              Authorization: `Bearer ${storedToken}`,
+              Authorization: `Bearer ${token}`,
             },
           }),
         ]);
     
+        let mealsData = [];
+        let categoriesData = [];
+    
         if (!mealsRes.ok) {
-          throw new Error(`Failed to fetch meals: ${mealsRes.status}`);
+          if (mealsRes.status === 401) {
+            console.log('Meals fetch unauthorized, redirecting to login');
+            router.push('/restaurant-login');
+            return;
+          }
+          // For other errors, show empty meals but continue
+          console.error(`Failed to fetch meals: ${mealsRes.status}`);
+          setMeals([]);
+        } else {
+          mealsData = await mealsRes.json();
+          setMeals(mealsData);
+          console.log('Meals fetched successfully:', mealsData.length);
         }
+
         if (!categoriesRes.ok) {
-          throw new Error(`Failed to fetch categories: ${categoriesRes.ok}`);
+          if (categoriesRes.status === 401) {
+            console.log('Categories fetch unauthorized, redirecting to login');
+            router.push('/restaurant-login');
+            return;
+          }
+          // For other errors, continue with empty categories
+          console.error(`Failed to fetch categories: ${categoriesRes.status}`);
+        } else {
+          categoriesData = await categoriesRes.json();
+          console.log('Categories fetched successfully:', categoriesData.length);
         }
-    
-        const mealsData = await mealsRes.json();
-        const categoriesData = await categoriesRes.json();
-    
-        setMeals(mealsData);
     
         // Calculate statistics
         const totalMeals = mealsData.length;
@@ -176,13 +260,20 @@ export default function RestaurantDashboard() {
           trialDaysLeft
         });
     
+        console.log('Dashboard data loaded successfully');
+    
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
         toast.error(language === 'ar' ? 'حدث خطأ في تحميل البيانات' : 'Error loading dashboard data');
-        // If there's an authentication error, redirect to login
+        
+        // Only redirect to login if it's an authentication error
         if (error instanceof Error && error.message.includes('401')) {
+          console.log('Authentication error, redirecting to login');
           router.push('/restaurant-login');
+          return;
         }
+        
+        // For other errors, show empty state but don't redirect
         setStats({
           totalReviews: 0,
           totalMeals: 0,
@@ -197,9 +288,9 @@ export default function RestaurantDashboard() {
         setLoading(false);
       }
     };
-    
-    fetchData();
-  }, [isAuthenticated, restaurant, token, router, language]);
+
+    initializeAuth();
+  }, [isAuthenticated, token, router, language, login]);
 
   const deleteMeal = async (id: string) => {
     const confirmed = window.confirm(language === 'ar' ? 'هل أنت متأكد من حذف هذه الوجبة؟' : 'Are you sure you want to delete this meal?');
@@ -472,18 +563,18 @@ export default function RestaurantDashboard() {
               <span>{translations.manageCategories[language]}</span>
             </Link>
             <Link
+              href="/dashboard/discounts"
+              className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+            >
+              <FaMoneyBill className="text-orange-600 text-xl" />
+              <span>{language === 'ar' ? 'إدارة الخصومات' : 'Manage Discounts'}</span>
+            </Link>
+            <Link
               href="/dashboard/qr"
               className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
             >
               <FaQrcode className="text-indigo-600 text-xl" />
               <span>{translations.viewQR[language]}</span>
-            </Link>
-            <Link
-              href={`/restaurant/${restaurant?.id}`}
-              className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-            >
-              <FaChartLine className="text-blue-600 text-xl" />
-              <span>{translations.settings[language]}</span>
             </Link>
           </div>
         </div>
@@ -499,48 +590,85 @@ export default function RestaurantDashboard() {
               {translations.addNewMeal[language]}
             </Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {meals.slice(0, 6).map((meal) => (
-              <div key={meal._id} className="bg-gray-50 rounded-lg overflow-hidden">
-                <div className="relative h-48">
-                  <Image
-                    src={meal.image || "/placeholder.svg"}
-                    alt={language === 'ar' ? meal.name.ar : meal.name.en}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <div className="p-4">
-                  <h3 className="text-lg font-semibold mb-2">
-                    {language === 'ar' ? meal.name.ar : meal.name.en}
-                  </h3>
-                  <p className="text-gray-600 text-sm mb-2">
-                    {language === 'ar' ? meal.description.ar : meal.description.en}
-                  </p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-green-600 font-bold">
-                      {language === 'ar' ? `${meal.price} جنيه` : `${meal.price} EGP`}
-                    </span>
-                    <div className="flex gap-2">
-                      <Link
-                        href={`/dashboard/meals/edit/${meal._id}`}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        <FaEdit className="text-xl" />
-                      </Link>
-                          <button
-                        onClick={() => deleteMeal(meal._id)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <FaTrash className="text-xl" />
-                          </button>
+          
+          {meals.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <FaUtensils className="text-6xl mx-auto" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                {language === 'ar' ? 'لا توجد وجبات بعد' : 'No meals yet'}
+              </h3>
+              <p className="text-gray-500 mb-6">
+                {language === 'ar' 
+                  ? 'ابدأ بإضافة وجبتك الأولى لعرضها هنا' 
+                  : 'Start by adding your first meal to display it here'}
+              </p>
+              <Link
+                href="/dashboard/meals/add"
+                className="bg-[#222] text-white px-6 py-3 rounded-lg hover:bg-[#333] transition inline-block"
+              >
+                {translations.addNewMeal[language]}
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {meals.slice(0, 6).map((meal) => (
+                <div key={meal._id} className="bg-gray-50 rounded-lg overflow-hidden">
+                  <div className="relative h-48">
+                    <Image
+                      src={meal.image || "/placeholder.svg"}
+                      alt={language === 'ar' ? meal.name.ar : meal.name.en}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="text-lg font-semibold mb-2">
+                      {language === 'ar' ? meal.name.ar : meal.name.en}
+                    </h3>
+                    <p className="text-gray-600 text-sm mb-2">
+                      {language === 'ar' ? meal.description.ar : meal.description.en}
+                    </p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-green-600 font-bold">
+                        {meal.isDiscountActive && meal.discountedPrice ? (
+                          <div className="flex items-center gap-2">
+                            <span className="line-through text-gray-400">
+                              {language === 'ar' ? `${meal.price} جنيه` : `${meal.price} EGP`}
+                            </span>
+                            <span>
+                              {language === 'ar' ? `${meal.discountedPrice} جنيه` : `${meal.discountedPrice} EGP`}
+                            </span>
+                            <span className="text-orange-600 text-sm">
+                              -{meal.discountPercentage}%
+                            </span>
+                          </div>
+                        ) : (
+                          language === 'ar' ? `${meal.price} جنيه` : `${meal.price} EGP`
+                        )}
+                      </span>
+                      <div className="flex gap-2">
+                        <Link
+                          href={`/dashboard/meals/edit/${meal._id}`}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          <FaEdit className="text-xl" />
+                        </Link>
+                            <button
+                          onClick={() => deleteMeal(meal._id)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <FaTrash className="text-xl" />
+                            </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
             </div>
+          )}
+        </div>
       </div>
     </div>
   );

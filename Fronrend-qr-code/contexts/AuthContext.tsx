@@ -11,9 +11,9 @@ import React, {
 
 interface RegularUser {
   id: string;
-  name: string;
+  name?: string;
   email: string;
-  role: 'user';
+  role: 'user' | 'admin';
 }
 
 interface RestaurantUser {
@@ -48,8 +48,6 @@ interface RestaurantUser {
   updatedAt?: string;
 }
 
-type User = RegularUser | RestaurantUser;
-
 interface AuthContextType {
   restaurant: RestaurantUser | null;
   user: RegularUser | null;
@@ -73,12 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // تهيئة حالة تسجيل الدخول عند تحميل التطبيق
   useEffect(() => {
     const initializeAuth = () => {
-
       const storedToken = localStorage.getItem('token');
       const storedRestaurant = localStorage.getItem('restaurant');
       const storedUser = localStorage.getItem('user');
-
-
 
       if (storedToken) {
         try {
@@ -107,6 +102,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null);
           setIsAuthenticated(false);
         }
+      } else {
+        // No token found, ensure we're logged out
+        setToken(null);
+        setRestaurant(null);
+        setUser(null);
+        setIsAuthenticated(false);
       }
       setIsInitialized(true);
     };
@@ -115,7 +116,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Add event listener for restaurant updates
     const handleRestaurantUpdate = (event: CustomEvent) => {
-
       const updatedRestaurant = event.detail;
       setRestaurant(updatedRestaurant);
       localStorage.setItem('restaurant', JSON.stringify(updatedRestaurant));
@@ -129,9 +129,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (userData: RestaurantUser | RegularUser, token: string) => {
-
+    // First save token to localStorage immediately
+    localStorage.setItem('token', token);
+    setToken(token);
     
-    // First update state
+    // Set authenticated state immediately
+    setIsAuthenticated(true);
+    
+    // Then handle user data
     if ('subdomain' in userData) {
       // This is a restaurant
       try {
@@ -169,17 +174,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRestaurant(null);
       localStorage.setItem('user', JSON.stringify(userData));
     }
-    
-    // تحديث التوكن في الحالة
-    setToken(token);
-    setIsAuthenticated(true);
-    
-
   };
 
   const logout = () => {
-
-    
     // First clear state
     setRestaurant(null);
     setUser(null);
@@ -190,8 +187,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('token');
     localStorage.removeItem('restaurant');
     localStorage.removeItem('user');
-    
-
   };
 
   const value = {
@@ -202,8 +197,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout,
     isAuthenticated
   };
-
-
 
   if (!isInitialized) {
     return null;

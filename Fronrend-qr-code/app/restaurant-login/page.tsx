@@ -1,15 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { toast } from "react-hot-toast";
 
 export default function RestaurantLoginPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const { login } = useAuth();
   const { language } = useLanguage();
 
@@ -17,14 +14,6 @@ export default function RestaurantLoginPage() {
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  const [subdomain, setSubdomain] = useState<string>("");
-
-  useEffect(() => {
-    const subdomainParam = searchParams?.get('subdomain');
-    if (subdomainParam) {
-      setSubdomain(subdomainParam);
-    }
-  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,25 +35,18 @@ export default function RestaurantLoginPage() {
 
       const { token, restaurant } = data;
       
-      // First save to localStorage
+      // Save to localStorage first
       localStorage.setItem('token', token);
       localStorage.setItem('restaurant', JSON.stringify(restaurant));
       console.log('Data saved to localStorage');
       
-      // Then update auth context
+      // Update auth context
       login(restaurant, token);
       console.log('Auth state updated');
       
-      // Wait a moment to ensure state is updated
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Verify data was saved
-      const savedToken = localStorage.getItem('token');
-      const savedRestaurant = localStorage.getItem('restaurant');
-      
       toast.success(language === 'ar' ? 'تم تسجيل الدخول بنجاح' : 'Login successful');
       
-      // Redirect to subdomain with auto-login
+      // Redirect to subdomain with auto-login data
       const redirectUrl = `http://${restaurant.subdomain}.localhost:3000/dashboard?token=${token}&restaurant=${encodeURIComponent(JSON.stringify(restaurant))}`;
       window.location.replace(redirectUrl);
       

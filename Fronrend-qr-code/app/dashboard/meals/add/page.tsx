@@ -33,6 +33,9 @@ interface MealState {
   image: File | null;
   imagePreview: string;
   categoryId: string;
+  discountPercentage: string;
+  discountStartDate: string;
+  discountEndDate: string;
 }
 
 interface CategoryState {
@@ -55,6 +58,14 @@ interface ApiResponse {
   };
 }
 
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
+
 const AddMealPage = () => {
   const { restaurant, token } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -73,6 +84,9 @@ const AddMealPage = () => {
     image: null,
     imagePreview: "",
     categoryId: "",
+    discountPercentage: "",
+    discountStartDate: "",
+    discountEndDate: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -121,7 +135,7 @@ const AddMealPage = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    if (name === "price" || name === "categoryId") {
+    if (name === "price" || name === "categoryId" || name === "discountPercentage" || name === "discountStartDate" || name === "discountEndDate") {
       setMeal((prevMeal) => ({ ...prevMeal, [name]: value }));
     } else {
       const [field, lang] = name.split("_");
@@ -210,9 +224,10 @@ const AddMealPage = () => {
         });
         fetchCategories();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error adding category:', error);
-      const errorMessage = error.response?.data?.message || 
+      const apiError = error as ApiError;
+      const errorMessage = apiError.response?.data?.message || 
         (language === 'ar' ? 'حدث خطأ أثناء إضافة الفئة' : 'Error adding category');
       toast.error(errorMessage);
     }
@@ -243,6 +258,16 @@ const AddMealPage = () => {
     formData.append("price", meal.price);
     if (meal.image) formData.append("image", meal.image);
     formData.append("categoryId", meal.categoryId);
+    
+    if (meal.discountPercentage) {
+      formData.append("discountPercentage", meal.discountPercentage);
+    }
+    if (meal.discountStartDate) {
+      formData.append("discountStartDate", meal.discountStartDate);
+    }
+    if (meal.discountEndDate) {
+      formData.append("discountEndDate", meal.discountEndDate);
+    }
 
     setLoading(true);
     try {
@@ -258,9 +283,10 @@ const AddMealPage = () => {
       );
       toast.success(language === 'ar' ? 'تمت إضافة الوجبة بنجاح' : 'Meal added successfully');
       router.push("/dashboard/meals");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error adding meal:", error);
-      const errorMessage = error.response?.data?.message || 
+      const apiError = error as ApiError;
+      const errorMessage = apiError.response?.data?.message || 
         (language === 'ar' ? 'حدث خطأ أثناء إضافة الوجبة' : 'Error adding meal');
       toast.error(errorMessage);
     } finally {
@@ -424,6 +450,62 @@ const AddMealPage = () => {
               />
             </div>
           )}
+        </div>
+
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <h3 className={`text-lg font-semibold mb-4 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+            {language === 'ar' ? 'خصم الوجبة (اختياري)' : 'Meal Discount (Optional)'}
+          </h3>
+          
+          <div className="mb-4">
+            <label className={`block text-sm font-medium text-gray-700 mb-1 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+              {language === 'ar' ? 'نسبة الخصم (%)' : 'Discount Percentage (%)'}
+            </label>
+            <input
+              type="number"
+              name="discountPercentage"
+              value={meal.discountPercentage}
+              onChange={handleMealChange}
+              min="0"
+              max="100"
+              placeholder={language === 'ar' ? 'مثال: 20' : 'e.g., 20'}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className={`block text-sm font-medium text-gray-700 mb-1 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+              {language === 'ar' ? 'تاريخ بداية الخصم' : 'Discount Start Date'}
+            </label>
+            <input
+              type="datetime-local"
+              name="discountStartDate"
+              value={meal.discountStartDate}
+              onChange={handleMealChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className={`block text-sm font-medium text-gray-700 mb-1 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+              {language === 'ar' ? 'تاريخ انتهاء الخصم' : 'Discount End Date'}
+            </label>
+            <input
+              type="datetime-local"
+              name="discountEndDate"
+              value={meal.discountEndDate}
+              onChange={handleMealChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+            <p className={language === 'ar' ? 'text-right' : 'text-left'}>
+              {language === 'ar' 
+                ? '💡 ملاحظة: إذا قمت بإدخال نسبة خصم، يجب تحديد تاريخي البداية والنهاية' 
+                : '💡 Note: If you enter a discount percentage, you must specify start and end dates'}
+            </p>
+          </div>
         </div>
 
         <button

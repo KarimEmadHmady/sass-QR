@@ -2,7 +2,7 @@
 
 import { useLanguage } from "@/contexts/LanguageContext";
 import Link from "next/link";
-import { FaQrcode, FaChartLine, FaUsers, FaMobileAlt, FaShieldAlt, FaClock, FaCheck, FaUtensils, FaBell, FaStar, FaGlobe, FaCog } from 'react-icons/fa';
+import { FaQrcode, FaChartLine, FaUsers, FaMobileAlt, FaShieldAlt, FaClock, FaCheck, FaUtensils, FaStar, FaGlobe, FaCog } from 'react-icons/fa';
 import { SiGoogle } from 'react-icons/si';
 import AnimatedBackground from "./AnimatedBackground";
 import SystemPreviewSlider from "./SystemPreviewSlider";

@@ -35,6 +35,11 @@ interface Meal {
   name: Translation;
   description: Translation;
   price: number;
+  discountedPrice?: number;
+  discountPercentage?: number;
+  discountStartDate?: string;
+  discountEndDate?: string;
+  isDiscountActive?: boolean;
   image: string;
   preparationTime?: number;
   isNew?: boolean;
@@ -160,6 +165,11 @@ const HomePage: React.FC = () => {
               ar: meal.description?.ar || ''
             },
             price: meal.price || 0,
+            discountedPrice: meal.discountedPrice,
+            discountPercentage: meal.discountPercentage,
+            discountStartDate: meal.discountStartDate,
+            discountEndDate: meal.discountEndDate,
+            isDiscountActive: meal.isDiscountActive,
             image: meal.image || '/placeholder.svg',
             preparationTime: meal.preparationTime,
             isNew: meal.isNew,
@@ -653,7 +663,21 @@ const HomePage: React.FC = () => {
 
                                   <div className="flex justify-between items-end">
                                     <div className="text-[12px] font-bold text-primary">
-                                      {meal.price} EGP
+                                      {meal.isDiscountActive && meal.discountedPrice ? (
+                                        <div className="flex items-center gap-1">
+                                          <span className="line-through text-gray-400">
+                                            {meal.price} EGP
+                                          </span>
+                                          <span>
+                                            {meal.discountedPrice} EGP
+                                          </span>
+                                          <span className="text-orange-600 text-xs">
+                                            -{meal.discountPercentage}%
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        `${meal.price} EGP`
+                                      )}
                                     </div>
 
                                     <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="flex items-center gap-2">
@@ -736,7 +760,21 @@ const HomePage: React.FC = () => {
 
                           <div className="flex justify-between items-end">
                             <div className="text-[12px] font-bold text-primary">
-                              {meal.price} EGP
+                              {meal.isDiscountActive && meal.discountedPrice ? (
+                                <div className="flex items-center gap-1">
+                                  <span className="line-through text-gray-400">
+                                    {meal.price} EGP
+                                  </span>
+                                  <span>
+                                    {meal.discountedPrice} EGP
+                                  </span>
+                                  <span className="text-orange-600 text-xs">
+                                    -{meal.discountPercentage}%
+                                  </span>
+                                </div>
+                              ) : (
+                                `${meal.price} EGP`
+                              )}
                             </div>
 
                             <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="flex items-center gap-2">
@@ -814,7 +852,23 @@ const HomePage: React.FC = () => {
                     {language === 'ar' ? selectedMeal.description?.ar : selectedMeal.description?.en}
                   </p>
                   <div className="flex items-center gap-2 mb-4">
-                    <span className="font-bold text-xl text-green-600">{selectedMeal.price} EGP</span>
+                    {selectedMeal.isDiscountActive && selectedMeal.discountedPrice ? (
+                      <div className="flex flex-col">
+                        <span className="font-bold text-xl text-green-600">
+                          {selectedMeal.discountedPrice} EGP
+                        </span>
+                        <span className="text-sm text-gray-400 line-through">
+                          {selectedMeal.price} EGP
+                        </span>
+                        <span className="text-xs text-orange-600 font-medium">
+                          -{selectedMeal.discountPercentage}%
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="font-bold text-xl text-green-600">
+                        {selectedMeal.price} EGP
+                      </span>
+                    )}
                   </div>
                   {selectedMeal.category && (
                     <div className="mb-4">

@@ -6,6 +6,7 @@ import AnimatedBackground from "@/components/AnimatedBackground";
 import Image from 'next/image';
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Translation {
   en: string;
@@ -34,6 +35,10 @@ interface Meal {
   category: string;
   image: string | null;
   reviews: Review[];
+  discountPercentage?: string;
+  discountStartDate?: string;
+  discountEndDate?: string;
+  isDiscountActive?: boolean;
 }
 
 interface ApiResponse {
@@ -56,6 +61,10 @@ interface ApiResponse {
     };
   };
   reviews: Review[];
+  discountPercentage?: number;
+  discountStartDate?: string;
+  discountEndDate?: string;
+  isDiscountActive?: boolean;
 }
 
 interface CategoryResponse {
@@ -73,6 +82,7 @@ interface CategoryResponse {
 
 const EditMealPage = () => {
   const { id } = useParams<{ id: string }>() || { id: "" };
+  const { token, isAuthenticated } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [meal, setMeal] = useState<Meal | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -87,9 +97,9 @@ const EditMealPage = () => {
         setLoading(true);
         setError(null);
 
-        const token = localStorage.getItem("token");
-        if (!token) {
+        if (!isAuthenticated || !token) {
           toast.error(language === 'ar' ? 'يجب تسجيل الدخول أولاً' : 'You need to login first');
+          router.push('/restaurant-login');
           return;
         }
 
@@ -115,7 +125,11 @@ const EditMealPage = () => {
           price: mealData.price?.toString() || '',
           category: mealData.category?._id || '',
           image: mealData.image || null,
-          reviews: mealData.reviews || []
+          reviews: mealData.reviews || [],
+          discountPercentage: mealData.discountPercentage?.toString() || '',
+          discountStartDate: mealData.discountStartDate ? new Date(mealData.discountStartDate).toISOString().slice(0, 16) : '',
+          discountEndDate: mealData.discountEndDate ? new Date(mealData.discountEndDate).toISOString().slice(0, 16) : '',
+          isDiscountActive: mealData.isDiscountActive
         });
 
         // Fetch categories
@@ -147,7 +161,7 @@ const EditMealPage = () => {
     };
 
     fetchData();
-  }, [id, language]);
+  }, [id, token, isAuthenticated, language, router]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -155,7 +169,7 @@ const EditMealPage = () => {
     if (!meal) return;
 
     const { name, value } = e.target;
-    if (name === "price" || name === "category") {
+    if (name === "price" || name === "category" || name === "discountPercentage" || name === "discountStartDate" || name === "discountEndDate") {
       setMeal({ ...meal, [name]: value });
     } else {
       // Handle translation fields
@@ -194,7 +208,18 @@ const EditMealPage = () => {
     formData.append("description[en]", meal.description.en);
     formData.append("description[ar]", meal.description.ar);
     formData.append("price", meal.price);
-    formData.append("category", meal.category);
+    formData.append("categoryId", meal.category);
+    
+    // إضافة حقول الخصم
+    if (meal.discountPercentage) {
+      formData.append("discountPercentage", meal.discountPercentage);
+    }
+    if (meal.discountStartDate) {
+      formData.append("discountStartDate", meal.discountStartDate);
+    }
+    if (meal.discountEndDate) {
+      formData.append("discountEndDate", meal.discountEndDate);
+    }
     
     // Handle image upload properly
     const imageInput = document.querySelector('input[name="image"]') as HTMLInputElement;
@@ -204,7 +229,6 @@ const EditMealPage = () => {
 
     setSubmitting(true);
     try {
-      const token = localStorage.getItem("token");
       if (!token) {
         throw new Error("No token found");
       }
@@ -242,7 +266,6 @@ const EditMealPage = () => {
     }
 
     try {
-      const token = localStorage.getItem("token");
       if (!token) {
         throw new Error("No token found");
       }
@@ -283,7 +306,6 @@ const EditMealPage = () => {
     if (!meal) return;
     
     try {
-      const token = localStorage.getItem("token");
       if (!token) {
         throw new Error("No token found");
       }
@@ -514,6 +536,71 @@ const EditMealPage = () => {
             accept="image/*"
             className="w-full"
           />
+        </div>
+
+        {/* ✅ قسم الخصم */}
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <h3 className={`text-lg font-semibold mb-4 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+            {language === 'ar' ? 'خصم الوجبة (اختياري)' : 'Meal Discount (Optional)'}
+          </h3>
+          
+          {meal.isDiscountActive && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <p className={`text-sm text-green-700 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+                {language === 'ar' ? '✅ الخصم نشط حالياً' : '✅ Discount is currently active'}
+              </p>
+            </div>
+          )}
+          
+          <div className="mb-4">
+            <label className={`block text-sm font-medium text-gray-700 mb-1 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+              {language === 'ar' ? 'نسبة الخصم (%)' : 'Discount Percentage (%)'}
+            </label>
+            <input
+              type="number"
+              name="discountPercentage"
+              value={meal.discountPercentage || ''}
+              onChange={handleChange}
+              min="0"
+              max="100"
+              placeholder={language === 'ar' ? 'مثال: 20' : 'e.g., 20'}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className={`block text-sm font-medium text-gray-700 mb-1 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+              {language === 'ar' ? 'تاريخ بداية الخصم' : 'Discount Start Date'}
+            </label>
+            <input
+              type="datetime-local"
+              name="discountStartDate"
+              value={meal.discountStartDate || ''}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className={`block text-sm font-medium text-gray-700 mb-1 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+              {language === 'ar' ? 'تاريخ انتهاء الخصم' : 'Discount End Date'}
+            </label>
+            <input
+              type="datetime-local"
+              name="discountEndDate"
+              value={meal.discountEndDate || ''}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+            <p className={language === 'ar' ? 'text-right' : 'text-left'}>
+              {language === 'ar' 
+                ? '💡 ملاحظة: إذا قمت بإدخال نسبة خصم، يجب تحديد تاريخي البداية والنهاية' 
+                : '💡 Note: If you enter a discount percentage, you must specify start and end dates'}
+            </p>
+          </div>
         </div>
 
         <div className="flex gap-4 justify-end mt-6">

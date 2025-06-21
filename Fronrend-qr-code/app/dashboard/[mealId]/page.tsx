@@ -15,6 +15,11 @@ interface Meal {
   name: string
   description: string
   price: number
+  discountedPrice?: number
+  discountPercentage?: number
+  discountStartDate?: string
+  discountEndDate?: string
+  isDiscountActive?: boolean
   image: string
   category?: string
   reviews: { _id: string; name: string; rating: number; comment: string }[]
@@ -165,7 +170,27 @@ const MealDetailsPage = () => {
                       "لا يوجد تقييم"
                     )}
                   </div>
-                  <span className="text-xl font-bold text-green-600 rtl">L.E {meal.price.toFixed(2)}</span>
+                  
+                  {/* عرض السعر مع الخصم */}
+                  <div className="text-right">
+                    {meal.isDiscountActive && meal.discountedPrice ? (
+                      <div className="flex flex-col items-end">
+                        <span className="text-lg font-bold text-green-600">
+                          L.E {meal.discountedPrice.toFixed(2)}
+                        </span>
+                        <span className="text-sm text-gray-400 line-through">
+                          L.E {meal.price.toFixed(2)}
+                        </span>
+                        <span className="text-xs text-orange-600 font-medium">
+                          خصم {meal.discountPercentage}%
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xl font-bold text-green-600 rtl">
+                        L.E {meal.price.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
               </div>
