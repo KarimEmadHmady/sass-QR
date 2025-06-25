@@ -8,6 +8,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { FaQrcode, FaGlobe } from 'react-icons/fa';
 import { toast } from "react-hot-toast";
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface MongoDate {
   $date: {
@@ -646,19 +647,23 @@ export default function RestaurantPage() {
       {/* Restaurant Header */}
       <header className="relative h-64 bg-gray-900">
         {authRestaurant.banner && (
-          <img
+          <Image
             src={authRestaurant.banner}
             alt={authRestaurant.name}
             className="w-full h-full object-cover opacity-50"
+            width={1280}
+            height={720}
           />
         )}
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center text-white">
             {authRestaurant.logo && (
-              <img
+              <Image
                 src={authRestaurant.logo}
                 alt={authRestaurant.name}
                 className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
+                width={96}
+                height={96}
               />
             )}
             <h1 className="text-4xl font-bold">{authRestaurant.name}</h1>
@@ -878,10 +883,12 @@ export default function RestaurantPage() {
                 <div className="flex items-center space-x-6">
                   {(logoPreview || authRestaurant.logo) && (
                     <div className="relative w-32 h-32">
-                      <img
-                        src={logoPreview || authRestaurant.logo}
+                      <Image
+                        src={logoPreview || authRestaurant.logo || ''}
                         alt="Logo preview"
                         className="w-full h-full object-cover rounded-full"
+                        width={128}
+                        height={128}
                       />
                     </div>
                   )}
@@ -907,10 +914,12 @@ export default function RestaurantPage() {
                 <div className="flex items-center space-x-6">
                   {(bannerPreview || authRestaurant.banner) && (
                     <div className="relative w-48 h-32">
-                      <img
-                        src={bannerPreview || authRestaurant.banner}
+                      <Image
+                        src={bannerPreview || authRestaurant.banner || ''}
                         alt="Banner preview"
                         className="w-full h-full object-cover rounded-lg"
+                        width={192}
+                        height={128}
                       />
                     </div>
                   )}
@@ -1127,10 +1136,12 @@ export default function RestaurantPage() {
                   <div className="bg-gray-50 rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">{t.logo}</h3>
                     <div className="flex justify-center">
-                      <img
+                      <Image
                         src={authRestaurant.logo}
                         alt="Restaurant Logo"
                         className="w-48 h-48 object-cover rounded-full shadow-lg"
+                        width={192}
+                        height={192}
                       />
                     </div>
                   </div>
@@ -1139,10 +1150,12 @@ export default function RestaurantPage() {
                   <div className="bg-gray-50 rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">{t.banner}</h3>
                     <div className="flex justify-center">
-                      <img
+                      <Image
                         src={authRestaurant.banner}
                         alt="Restaurant Banner"
                         className="w-full h-48 object-cover rounded-lg shadow-lg"
+                        width={192}
+                        height={128}
                       />
                     </div>
                   </div>
