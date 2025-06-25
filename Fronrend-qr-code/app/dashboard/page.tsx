@@ -80,7 +80,6 @@ export default function RestaurantDashboard() {
       
       if (urlToken && restaurantData && !isAuthenticated) {
         try {
-          console.log('Processing auto-login from URL...');
           // Parse restaurant data
           const restaurant = JSON.parse(decodeURIComponent(restaurantData));
           
@@ -94,7 +93,6 @@ export default function RestaurantDashboard() {
           // Remove data from URL
           window.history.replaceState({}, document.title, window.location.pathname);
           
-          console.log('Auto-login completed, fetching data...');
           // Fetch data immediately after login
           fetchData();
           return;
@@ -110,10 +108,8 @@ export default function RestaurantDashboard() {
         
         if (storedToken && storedRestaurant) {
           try {
-            console.log('Processing stored authentication data...');
             const restaurant = JSON.parse(storedRestaurant);
             await login(restaurant, storedToken);
-            console.log('Stored authentication restored, fetching data...');
             // Fetch data immediately after login
             fetchData();
             return;
@@ -128,10 +124,8 @@ export default function RestaurantDashboard() {
       
       // If we're already authenticated, fetch data
       if (isAuthenticated && token) {
-        console.log('Already authenticated, fetching data...');
         fetchData();
       } else {
-        console.log('Not authenticated, setting loading to false');
         setLoading(false);
       }
     };
@@ -140,12 +134,9 @@ export default function RestaurantDashboard() {
       try {
         // Check if user is authenticated
         if (!isAuthenticated || !token) {
-          console.log('Not authenticated, redirecting to login');
           router.push('/restaurant-login');
           return;
         }
-
-        console.log('Fetching dashboard data...');
 
         // Fetch restaurant profile to get trial information
         const restaurantRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/profile`, {
@@ -157,7 +148,6 @@ export default function RestaurantDashboard() {
         if (!restaurantRes.ok) {
           if (restaurantRes.status === 401) {
             // Token is invalid, redirect to login
-            console.log('Token invalid, redirecting to login');
             router.push('/restaurant-login');
             return;
           }
@@ -178,7 +168,6 @@ export default function RestaurantDashboard() {
         }
     
         const restaurantData = await restaurantRes.json();
-        console.log('Restaurant profile fetched successfully');
     
         // Calculate remaining trial days
         const trialEndsAt = new Date(restaurantData.subscription.trialEndsAt);
@@ -206,85 +195,49 @@ export default function RestaurantDashboard() {
             },
           }),
         ]);
-    
-        let mealsData = [];
-        let categoriesData = [];
-    
-        if (!mealsRes.ok) {
-          if (mealsRes.status === 401) {
-            console.log('Meals fetch unauthorized, redirecting to login');
-            router.push('/restaurant-login');
-            return;
-          }
-          // For other errors, show empty meals but continue
-          console.error(`Failed to fetch meals: ${mealsRes.status}`);
-          setMeals([]);
-        } else {
-          mealsData = await mealsRes.json();
-          setMeals(mealsData);
-          console.log('Meals fetched successfully:', mealsData.length);
+
+        if (!mealsRes.ok || !categoriesRes.ok) {
+          throw new Error('Failed to fetch data');
         }
 
-        if (!categoriesRes.ok) {
-          if (categoriesRes.status === 401) {
-            console.log('Categories fetch unauthorized, redirecting to login');
-            router.push('/restaurant-login');
-            return;
-          }
-          // For other errors, continue with empty categories
-          console.error(`Failed to fetch categories: ${categoriesRes.status}`);
-        } else {
-          categoriesData = await categoriesRes.json();
-          console.log('Categories fetched successfully:', categoriesData.length);
-        }
-    
-        // Calculate statistics
-        const totalMeals = mealsData.length;
-        const totalCategories = categoriesData.length;
-        const totalReviews = mealsData.reduce((acc: number, meal: Meal) => acc + (meal.reviews?.length || 0), 0);
-        const averageRating = mealsData.length > 0 
-          ? mealsData.reduce((acc: number, meal: Meal) => acc + (meal.rating || 0), 0) / mealsData.length 
-          : 0;
-        const averageMealPrice = mealsData.length > 0
-          ? mealsData.reduce((acc: number, meal: Meal) => acc + meal.price, 0) / mealsData.length
-          : 0;
-    
-        // Update stats
+        const [mealsData, categoriesData] = await Promise.all([
+          mealsRes.json(),
+          categoriesRes.json(),
+        ]);
+
+        setMeals(mealsData);
+        
+        // Calculate stats
+        const totalReviews = mealsData.reduce((sum: number, meal: Meal) => 
+          sum + (meal.reviews?.length || 0), 0
+        );
+        
+        const totalMealPrice = mealsData.reduce((sum: number, meal: Meal) => 
+          sum + (meal.isDiscountActive && meal.discountedPrice ? meal.discountedPrice : meal.price), 0
+        );
+        
+        const averageMealPrice = mealsData.length > 0 ? totalMealPrice / mealsData.length : 0;
+        
+        const totalRating = mealsData.reduce((sum: number, meal: Meal) => 
+          sum + (meal.rating || 0), 0
+        );
+        
+        const averageRating = mealsData.length > 0 ? totalRating / mealsData.length : 0;
+
         setStats({
           totalReviews,
-          totalMeals,
-          totalCategories,
+          totalMeals: mealsData.length,
+          totalCategories: categoriesData.length,
           averageMealPrice,
           averageRating,
           subscriptionStatus: restaurantData.subscription.status,
           trialDaysLeft
         });
-    
-        console.log('Dashboard data loaded successfully');
-    
+
+        setLoading(false);
       } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-        toast.error(language === 'ar' ? 'حدث خطأ في تحميل البيانات' : 'Error loading dashboard data');
-        
-        // Only redirect to login if it's an authentication error
-        if (error instanceof Error && error.message.includes('401')) {
-          console.log('Authentication error, redirecting to login');
-          router.push('/restaurant-login');
-          return;
-        }
-        
-        // For other errors, show empty state but don't redirect
-        setStats({
-          totalReviews: 0,
-          totalMeals: 0,
-          totalCategories: 0,
-          averageMealPrice: 0,
-          averageRating: 0,
-          subscriptionStatus: 'trial',
-          trialDaysLeft: 0
-        });
-        setMeals([]);
-      } finally {
+        console.error('Error fetching dashboard data:', error);
+        toast.error(language === 'ar' ? 'فشل في تحميل البيانات' : 'Failed to load data');
         setLoading(false);
       }
     };

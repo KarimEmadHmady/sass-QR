@@ -36,19 +36,7 @@ export default function Navbar() {
 
   // Add debugging logging
   useEffect(() => {
-    console.log('Navbar Debug - Auth State:', {
-      isAuthenticated,
-      user: user ? {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      } : null,
-      restaurant: restaurant ? {
-        id: restaurant.id,
-        name: restaurant.name
-      } : null
-    });
+    // Debug logging removed
   }, [isAuthenticated, user, restaurant]);
 
   useEffect(() => {

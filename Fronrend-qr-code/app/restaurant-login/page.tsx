@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { toast } from "react-hot-toast";
+import { setAuthData } from "@/utils/storage";
 
 export default function RestaurantLoginPage() {
   const { login } = useAuth();
@@ -14,6 +15,7 @@ export default function RestaurantLoginPage() {
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [redirecting, setRedirecting] = useState<boolean>(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,19 +38,21 @@ export default function RestaurantLoginPage() {
       const { token, restaurant } = data;
       
       // Save to localStorage first
-      localStorage.setItem('token', token);
-      localStorage.setItem('restaurant', JSON.stringify(restaurant));
-      console.log('Data saved to localStorage');
+      setAuthData(token, restaurant);
       
       // Update auth context
       login(restaurant, token);
-      console.log('Auth state updated');
       
       toast.success(language === 'ar' ? 'تم تسجيل الدخول بنجاح' : 'Login successful');
       
-      // Redirect to subdomain with auto-login data
-      const redirectUrl = `http://${restaurant.subdomain}.localhost:3000/dashboard?token=${token}&restaurant=${encodeURIComponent(JSON.stringify(restaurant))}`;
-      window.location.replace(redirectUrl);
+      // Show loading screen for 3 seconds
+      setRedirecting(true);
+      
+      setTimeout(() => {
+        // Redirect to subdomain with auto-login data
+        const redirectUrl = `http://${restaurant.subdomain}.localhost:3000/dashboard?token=${token}&restaurant=${encodeURIComponent(JSON.stringify(restaurant))}`;
+        window.location.replace(redirectUrl);
+      }, 3000);
       
     } catch (error) {
       console.error('Login error:', error);
@@ -86,6 +90,10 @@ export default function RestaurantLoginPage() {
       en: "Logging in...",
       ar: "جاري تسجيل الدخول..."
     },
+    redirecting: {
+      en: "Redirecting to dashboard...",
+      ar: "جاري التحويل للوحة التحكم..."
+    },
     dontHaveRestaurant: {
       en: "Don't have a restaurant account?",
       ar: "ليس لديك حساب مطعم؟"
@@ -103,6 +111,24 @@ export default function RestaurantLoginPage() {
       ar: "••••••••"
     }
   };
+
+  // Show loading screen when redirecting
+  if (redirecting) {
+    return (
+      <div className="min-h-screen bg-[#eee] flex items-center justify-center px-4">
+        <AnimatedBackground />
+        <div className="bg-white p-8 sm:p-10 rounded-2xl shadow-lg w-full max-w-md text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">
+            {translations.redirecting[language]}
+          </h2>
+          <p className="text-gray-600">
+            {language === 'ar' ? 'يرجى الانتظار...' : 'Please wait...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#eee] flex items-center justify-center px-4">

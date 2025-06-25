@@ -15,7 +15,7 @@ router.get('/restaurant/:subdomain', async (req, res) => {
     const { subdomain } = req.params;
     
     // First find the restaurant by subdomain
-    const restaurant = await Restaurant.findOne({ subdomain });
+    const restaurant = await Restaurant.findOne({ subdomain }).lean();
     if (!restaurant) {
       return res.status(404).json({ message: 'Restaurant not found' });
     }

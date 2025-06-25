@@ -82,13 +82,6 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    console.log('Backend login - Found user:', {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role
-    });
-
     // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {

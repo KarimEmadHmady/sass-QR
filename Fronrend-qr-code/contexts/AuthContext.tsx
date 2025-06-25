@@ -7,6 +7,7 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
+import { setAuthData, getAuthData, clearAuthData } from '../utils/storage';
 
 
 interface RegularUser {
@@ -71,39 +72,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // تهيئة حالة تسجيل الدخول عند تحميل التطبيق
   useEffect(() => {
     const initializeAuth = () => {
-      const storedToken = localStorage.getItem('token');
-      const storedRestaurant = localStorage.getItem('restaurant');
-      const storedUser = localStorage.getItem('user');
-
+      const { token: storedToken, user: storedUser } = getAuthData();
       if (storedToken) {
         try {
-          // تحديث التوكن في الحالة
           setToken(storedToken);
-          
-          if (storedRestaurant) {
-            const parsedRestaurant = JSON.parse(storedRestaurant);
-            setRestaurant(parsedRestaurant);
-          }
-          
           if (storedUser) {
-            const parsedUser = JSON.parse(storedUser);
-            setUser(parsedUser);
+            if ('subdomain' in storedUser) setRestaurant(storedUser);
+            else setUser(storedUser);
           }
-          
           setIsAuthenticated(true);
         } catch (error) {
           console.error('AuthProvider: Error parsing stored data:', error);
-          // مسح البيانات المخزنة في حالة حدوث خطأ
-          localStorage.removeItem('token');
-          localStorage.removeItem('restaurant');
-          localStorage.removeItem('user');
+          clearAuthData();
           setToken(null);
           setRestaurant(null);
           setUser(null);
           setIsAuthenticated(false);
         }
       } else {
-        // No token found, ensure we're logged out
         setToken(null);
         setRestaurant(null);
         setUser(null);
@@ -111,14 +97,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setIsInitialized(true);
     };
-
     initializeAuth();
 
     // Add event listener for restaurant updates
     const handleRestaurantUpdate = (event: CustomEvent) => {
       const updatedRestaurant = event.detail;
       setRestaurant(updatedRestaurant);
-      localStorage.setItem('restaurant', JSON.stringify(updatedRestaurant));
+      if (token) {
+        setAuthData(token, updatedRestaurant);
+      }
     };
 
     window.addEventListener('restaurantUpdated', handleRestaurantUpdate as EventListener);
@@ -129,14 +116,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (userData: RestaurantUser | RegularUser, token: string) => {
-    // First save token to localStorage immediately
-    localStorage.setItem('token', token);
+    setAuthData(token, userData);
     setToken(token);
-    
-    // Set authenticated state immediately
     setIsAuthenticated(true);
-    
-    // Then handle user data
     if ('subdomain' in userData) {
       // This is a restaurant
       try {
@@ -160,33 +142,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         setRestaurant(restaurantData);
         setUser(null);
-        localStorage.setItem('restaurant', JSON.stringify(restaurantData));
+        setAuthData(token, restaurantData);
       } catch (error) {
         console.error('Error updating subscription:', error);
         // If there's an error, still set the restaurant data but with existing subscription
         setRestaurant(userData);
         setUser(null);
-        localStorage.setItem('restaurant', JSON.stringify(userData));
+        setAuthData(token, userData);
       }
     } else {
       // This is a regular user
       setUser(userData);
       setRestaurant(null);
-      localStorage.setItem('user', JSON.stringify(userData));
+      setAuthData(token, userData);
     }
   };
 
   const logout = () => {
-    // First clear state
     setRestaurant(null);
     setUser(null);
     setToken(null);
     setIsAuthenticated(false);
-    
-    // Then clear localStorage
-    localStorage.removeItem('token');
-    localStorage.removeItem('restaurant');
-    localStorage.removeItem('user');
+    clearAuthData();
   };
 
   const value = {

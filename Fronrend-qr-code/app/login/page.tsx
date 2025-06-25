@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import AnimatedBackground from "@/components/AnimatedBackground";
+import { setAuthData } from "@/utils/storage";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -79,15 +80,8 @@ export default function LoginPage() {
       const { token, user } = data;
   
   
-      // تخزين التوكن
-      localStorage.setItem('token', token);
-  
-      // تخزين المستخدم العادي أو المطعم
-      if ('subdomain' in user) {
-        localStorage.setItem('restaurant', JSON.stringify(user));
-      } else {
-        localStorage.setItem('user', JSON.stringify(user));
-      }
+      // تخزين التوكن واليوزر
+      setAuthData(token, user);
   
       // استدعاء دالة login لتحديث الكونتكست
       login(user, token);

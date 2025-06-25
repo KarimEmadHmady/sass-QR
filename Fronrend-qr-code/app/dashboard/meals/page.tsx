@@ -8,6 +8,8 @@ import Image from 'next/image';
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useAuth } from "@/contexts/AuthContext";
+import useSWR from 'swr';
+import { showApiErrorToast } from '@/utils/apiError';
 
 interface Review {
   _id: string;
@@ -16,7 +18,7 @@ interface Review {
   comment: string;
 }
 
-interface Meal {
+interface MealData {
   _id: string;
   name: {
     en: string;
@@ -43,34 +45,7 @@ interface Meal {
   reviews: Review[];
 }
 
-interface ApiResponse {
-  _id: string;
-  name: {
-    en: string;
-    ar: string;
-  };
-  description: {
-    en: string;
-    ar: string;
-  };
-  price: number;
-  discountedPrice?: number;
-  discountPercentage?: number;
-  discountStartDate?: string;
-  discountEndDate?: string;
-  isDiscountActive?: boolean;
-  image: string;
-  category: {
-    _id: string;
-    name: {
-      en: string;
-      ar: string;
-    };
-  };
-  reviews: Review[];
-}
-
-interface Category {
+interface CategoryData {
   _id: string;
   name: {
     en: string;
@@ -83,101 +58,51 @@ interface Category {
   };
 }
 
+const fetcher = async (url: string) => {
+  const token = localStorage.getItem('token');
+  if (!token) throw new Error('No token found');
+  
+  const response = await axios.get(url, { 
+    headers: { Authorization: `Bearer ${token}` } 
+  });
+  return response.data;
+};
+
 const MealsPage = () => {
-  const { token, isAuthenticated } = useAuth();
-  const [meals, setMeals] = useState<Meal[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { token } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
-  const [categories, setCategories] = useState<Category[]>([]);
   const [activeCategory, setActiveCategory] = useState('all');
   const [language, setLanguage] = useState<'en' | 'ar'>('ar');
-  
-  // Bulk selection state
   const [selectedMeals, setSelectedMeals] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
-  const [discountData, setDiscountData] = useState({
-    percentage: 10,
-    startDate: '',
-    endDate: ''
-  });
+  const [discountData, setDiscountData] = useState({ percentage: 10, startDate: '', endDate: '' });
   const [bulkLoading, setBulkLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchMeals = async () => {
-      try {
-        setLoading(true);
-        
-        if (!isAuthenticated || !token) {
-          toast.error(language === 'ar' ? 'يجب تسجيل الدخول أولاً' : 'You need to login first');
-          return;
-        }
+  // SWR for meals and categories
+  const { data: meals = [], error: mealsError, isLoading: mealsLoading, mutate: mutateMeals } = useSWR(
+    token ? `${process.env.NEXT_PUBLIC_API_URL}/meals` : null, 
+    fetcher
+  );
+  const { data: categories = [], error: categoriesError, isLoading: categoriesLoading } = useSWR(
+    token ? `${process.env.NEXT_PUBLIC_API_URL}/categories` : null, 
+    fetcher
+  );
 
-        // Fetch meals
-        const mealsResponse = await axios.get<ApiResponse[]>(`${process.env.NEXT_PUBLIC_API_URL}/meals`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        
-        // Transform the data with proper typing
-        const transformedMeals: Meal[] = mealsResponse.data.map((meal: ApiResponse) => ({
-          _id: meal._id,
-          name: {
-            en: meal.name?.en || '',
-            ar: meal.name?.ar || ''
-          },
-          description: {
-            en: meal.description?.en || '',
-            ar: meal.description?.ar || ''
-          },
-          price: meal.price || 0,
-          discountedPrice: meal.discountedPrice,
-          discountPercentage: meal.discountPercentage,
-          discountStartDate: meal.discountStartDate,
-          discountEndDate: meal.discountEndDate,
-          isDiscountActive: meal.isDiscountActive,
-          image: meal.image || '',
-          category: {
-            _id: meal.category?._id || '',
-            name: {
-              en: meal.category?.name?.en || '',
-              ar: meal.category?.name?.ar || ''
-            }
-          },
-          reviews: meal.reviews || []
-        }));
-
-        setMeals(transformedMeals);
-
-        // Fetch categories
-        const categoriesResponse = await axios.get<Category[]>(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        
-        setCategories(categoriesResponse.data);
-        setLoading(false);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        setError(language === 'ar' ? 'حدث خطأ في تحميل البيانات' : 'Failed to load data. Please try again later.');
-        setMeals([]);
-        setCategories([]);
-        setLoading(false);
-      }
-    };
-
-    fetchMeals();
-  }, [token, isAuthenticated, language]);
-
-  // Update showBulkActions when selectedMeals changes
   useEffect(() => {
     setShowBulkActions(selectedMeals.length > 0);
   }, [selectedMeals]);
+
+  // Handle errors
+  useEffect(() => {
+    if (mealsError) {
+      showApiErrorToast(mealsError, 'فشل في تحميل الوجبات');
+    }
+    if (categoriesError) {
+      showApiErrorToast(categoriesError, 'فشل في تحميل الفئات');
+    }
+  }, [mealsError, categoriesError]);
 
   const deleteMeal = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this meal?")) {
@@ -186,17 +111,13 @@ const MealsPage = () => {
           toast.error("You need to be logged in!");
           return;
         }
-
         await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/meals/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
-        setMeals(meals.filter((meal) => meal._id !== id));
+        mutateMeals();
         toast.success("Meal deleted successfully");
       } catch (err) {
-        console.error("Error deleting meal:", err);
-        toast.error("Failed to delete meal. Please try again later.");
+        showApiErrorToast(err, "Failed to delete meal. Please try again later.");
       }
     }
   };
@@ -207,7 +128,7 @@ const MealsPage = () => {
       setSelectedMeals([]);
       setSelectAll(false);
     } else {
-      setSelectedMeals(filteredMeals.map(meal => meal._id));
+      setSelectedMeals(filteredMeals.map((meal: MealData) => meal._id));
       setSelectAll(true);
     }
   };
@@ -230,7 +151,6 @@ const MealsPage = () => {
       toast.error(language === 'ar' ? 'يرجى تحديد تاريخ البداية والنهاية' : 'Please select start and end dates');
       return;
     }
-
     try {
       setBulkLoading(true);
       const response = await axios.post(
@@ -241,65 +161,15 @@ const MealsPage = () => {
           discountStartDate: discountData.startDate,
           discountEndDate: discountData.endDate
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
       toast.success(language === 'ar' 
         ? `تم تطبيق الخصم على ${response.data.modifiedCount} وجبة بنجاح`
         : `Discount applied successfully to ${response.data.modifiedCount} meals`
       );
-
-      // Refresh meals data
-      const mealsResponse = await axios.get<ApiResponse[]>(`${process.env.NEXT_PUBLIC_API_URL}/meals`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
-      const transformedMeals: Meal[] = mealsResponse.data.map((meal: ApiResponse) => ({
-        _id: meal._id,
-        name: {
-          en: meal.name?.en || '',
-          ar: meal.name?.ar || ''
-        },
-        description: {
-          en: meal.description?.en || '',
-          ar: meal.description?.ar || ''
-        },
-        price: meal.price || 0,
-        discountedPrice: meal.discountedPrice,
-        discountPercentage: meal.discountPercentage,
-        discountStartDate: meal.discountStartDate,
-        discountEndDate: meal.discountEndDate,
-        isDiscountActive: meal.isDiscountActive,
-        image: meal.image || '',
-        category: {
-          _id: meal.category?._id || '',
-          name: {
-            en: meal.category?.name?.en || '',
-            ar: meal.category?.name?.ar || ''
-          }
-        },
-        reviews: meal.reviews || []
-      }));
-
-      setMeals(transformedMeals);
-      setSelectedMeals([]);
-      setSelectAll(false);
-      setShowDiscountModal(false);
-      setDiscountData({ percentage: 10, startDate: '', endDate: '' });
-
-    } catch (err: unknown) {
-      console.error("Error applying bulk discount:", err);
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-      toast.error(language === 'ar' 
-        ? 'فشل في تطبيق الخصم. يرجى المحاولة مرة أخرى.'
-        : errorMessage
-      );
+      mutateMeals();
+    } catch (err) {
+      showApiErrorToast(err, language === 'ar' ? 'فشل في تطبيق الخصم' : 'Failed to apply discount');
     } finally {
       setBulkLoading(false);
     }
@@ -312,38 +182,24 @@ const MealsPage = () => {
     )) {
       return;
     }
-
     try {
       setBulkLoading(true);
       const response = await axios.delete(
         `${process.env.NEXT_PUBLIC_API_URL}/meals/bulk-delete`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          data: {
-            mealIds: selectedMeals
-          }
+          headers: { Authorization: `Bearer ${token}` },
+          data: { mealIds: selectedMeals }
         }
       );
-
       toast.success(language === 'ar' 
         ? `تم حذف ${response.data.deletedCount} وجبة بنجاح`
         : `Successfully deleted ${response.data.deletedCount} meals`
       );
-
-      // Remove deleted meals from state
-      setMeals(meals.filter(meal => !selectedMeals.includes(meal._id)));
+      mutateMeals();
       setSelectedMeals([]);
       setSelectAll(false);
-
     } catch (err: unknown) {
-      console.error("Error deleting meals:", err);
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-      toast.error(language === 'ar' 
-        ? 'فشل في حذف الوجبات. يرجى المحاولة مرة أخرى.'
-        : errorMessage
-      );
+      showApiErrorToast(err, language === 'ar' ? 'فشل في حذف الوجبات. يرجى المحاولة مرة أخرى.' : 'Failed to delete meals. Please try again later.');
     } finally {
       setBulkLoading(false);
     }
@@ -366,29 +222,38 @@ const MealsPage = () => {
     );
   };
 
-  if (loading) {
+  if (mealsLoading || categoriesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#eee]">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <div className="text-gray-600 font-medium">
+          <div className="text-gray-600 font-medium">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (mealsError || categoriesError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#eee]">
+        <div className="text-center">
+          <div className="text-red-600 font-medium">
+            {mealsError ? 'فشل في تحميل الوجبات' : 'فشل في تحميل الفئات'}
           </div>
         </div>
       </div>
     );
   }
 
-  const filteredMeals = meals.filter((meal) => {
+  const filteredMeals = meals.filter((meal: MealData) => {
     const matchesSearch = 
       (meal.name?.ar?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (meal.name?.en?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (meal.description?.ar?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (meal.description?.en?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-    
     const matchesCategory = 
       activeCategory === 'all' || 
       meal.category?._id === activeCategory;
-    
     return matchesSearch && matchesCategory;
   });
 
@@ -435,7 +300,7 @@ const MealsPage = () => {
           >
             {language === 'ar' ? 'الكل' : 'All'}
           </button>
-          {categories.map((category) => (
+          {categories.map((category: CategoryData) => (
             <button
               key={category._id}
               onClick={() => setActiveCategory(category._id)}
@@ -493,9 +358,9 @@ const MealsPage = () => {
       )}
 
       {/* Meals Grid */}
-      {error ? (
+      {mealsError ? (
         <div className="text-center text-red-500 py-8">
-          {language === 'ar' ? 'حدث خطأ في تحميل الوجبات' : error}
+          {language === 'ar' ? 'حدث خطأ في تحميل الوجبات' : mealsError.message}
         </div>
       ) : filteredMeals.length === 0 ? (
         <div className="text-center py-12">
@@ -541,7 +406,7 @@ const MealsPage = () => {
           </div>
           
           <div className="divide-y divide-gray-100">
-            {filteredMeals.map((meal) => (
+            {filteredMeals.map((meal: MealData) => (
               <div
                 key={meal._id}
                 className={`p-4 hover:bg-gray-50 transition-all duration-200 ease-in-out transform hover:scale-[1.01] hover:shadow-md ${language === 'ar' ? 'flex-row-reverse' : 'flex-row'} flex items-center gap-4 border-b border-gray-100 last:border-b-0`}
@@ -618,7 +483,7 @@ const MealsPage = () => {
                         {meal.reviews && meal.reviews.length > 0 && (
                           <div className="flex items-center gap-1">
                             {renderStars(
-                              meal.reviews.reduce((sum, review) => sum + review.rating, 0) / meal.reviews.length
+                              meal.reviews.reduce((sum: number, review: Review) => sum + review.rating, 0) / meal.reviews.length
                             )}
                             <span className="text-xs text-gray-500">
                               ({meal.reviews.length})

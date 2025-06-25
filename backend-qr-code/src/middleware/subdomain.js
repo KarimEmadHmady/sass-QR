@@ -25,7 +25,7 @@ export const subdomainMiddleware = async (req, res, next) => {
     }
 
     // Find restaurant by subdomain
-    const restaurant = await Restaurant.findOne({ subdomain });
+    const restaurant = await Restaurant.findOne({ subdomain }).lean();
     
     if (!restaurant) {
       return res.status(404).json({ message: 'Restaurant not found' });

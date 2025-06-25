@@ -33,7 +33,6 @@ const SocialIcons = () => {
       }
 
       if (!currentSubdomain || currentSubdomain === 'localhost' || currentSubdomain === 'www') {
-        console.log('No valid subdomain available');
         setHasSubdomain(false);
         setLoading(false);
         return;
@@ -49,11 +48,8 @@ const SocialIcons = () => {
 
         const data = await response.json();
 
-
         if (data && data.settings && data.settings.socialMedia) {
           setRestaurant(data);
-        } else {
-          console.log('No social media data found in restaurant settings');
         }
       } catch (error) {
         console.error('Error fetching restaurant data:', error);
@@ -126,7 +122,7 @@ const SocialIcons = () => {
       );
     }
 
-    if (!restaurant?.settings?.socialMedia) {
+    if (!restaurant || !restaurant.settings || !restaurant.settings.socialMedia) {
       return null;
     }
 

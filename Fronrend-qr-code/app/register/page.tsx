@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import AnimatedBackground from "@/components/AnimatedBackground";
+import { setAuthData } from "@/utils/storage";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -90,8 +91,7 @@ export default function RegisterPage() {
 
       if (token && user) {
         login(user, token);
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
+        setAuthData(token, user);
         router.push("/");
       } else {
         throw new Error(language === 'ar' ? "فشل في استرداد بيانات المستخدم" : "Failed to retrieve user data");

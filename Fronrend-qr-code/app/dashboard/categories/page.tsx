@@ -5,6 +5,8 @@ import axios from "axios";
 import { toast } from "react-hot-toast";
 import Image from "next/image";
 import AnimatedBackground from "@/components/AnimatedBackground";
+import useSWR from 'swr';
+import { showApiErrorToast } from '@/utils/apiError';
 
 const EditIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -27,17 +29,6 @@ const PlusIcon = () => (
     <path d="M5 12h14" />
   </svg>
 );
-
-// Add proper error type
-interface ApiError {
-  message: string;
-  status?: number;
-  code?: string;
-  response?: {
-    status: number;
-    data: Record<string, unknown>;
-  };
-}
 
 interface MealResponse {
   _id: string;
@@ -64,20 +55,6 @@ interface Category {
   mealCount?: number;
 }
 
-interface ApiResponse {
-  _id: string;
-  name: {
-    en: string;
-    ar: string;
-  };
-  image: string;
-  description?: {
-    en: string;
-    ar: string;
-  };
-  mealCount?: number;
-}
-
 interface NewCategory {
   name: {
     en: string;
@@ -91,9 +68,18 @@ interface NewCategory {
   imagePreview: string;
 }
 
+const fetcher = async (url: string) => {
+  const token = localStorage.getItem('token');
+  if (!token) throw new Error('No token found');
+  
+  const response = await axios.get(url, { 
+    headers: { Authorization: `Bearer ${token}` } 
+  });
+  return response.data;
+};
+
 const CategoriesPage = () => {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [language, setLanguage] = useState<'en' | 'ar'>('ar');
@@ -104,50 +90,31 @@ const CategoriesPage = () => {
     image: null,
     imagePreview: "",
   });
+  
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const { data: categoriesData = [], error, isLoading, mutate } = useSWR(
+    token ? `${process.env.NEXT_PUBLIC_API_URL}/categories` : null, 
+    fetcher
+  );
+  
+  const { data: mealsData = [] } = useSWR(
+    token ? `${process.env.NEXT_PUBLIC_API_URL}/meals` : null, 
+    fetcher
+  );
 
-  // Fetch categories
+  // Update categories when SWR data changes and calculate meal counts
   useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        toast.error(language === 'ar' ? 'يجب تسجيل الدخول أولاً' : 'You need to login first');
-        return;
-      }
-
-      const response = await axios.get<ApiResponse[]>(
-        `${process.env.NEXT_PUBLIC_API_URL}/categories`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      
-      // Get meal counts for each category
-      const mealsResponse = await axios.get<MealResponse[]>(
-        `${process.env.NEXT_PUBLIC_API_URL}/meals`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      const meals = mealsResponse.data;
-      
+    if (categoriesData && Array.isArray(categoriesData) && mealsData && Array.isArray(mealsData)) {
       // Calculate meal counts for each category
       const mealCounts: { [key: string]: number } = {};
-      meals.forEach((meal: MealResponse) => {
+      mealsData.forEach((meal: MealResponse) => {
         if (meal.category) {
           mealCounts[meal.category._id] = (mealCounts[meal.category._id] || 0) + 1;
         }
       });
       
-      // Transform the data with proper typing and include meal counts
-      const transformedCategories: Category[] = response.data.map((category: ApiResponse) => ({
+      // Transform the data with meal counts
+      const transformedCategories: Category[] = categoriesData.map((category: Category) => ({
         _id: category._id,
         name: {
           en: category.name?.en || '',
@@ -162,19 +129,15 @@ const CategoriesPage = () => {
       }));
 
       setCategories(transformedCategories);
-      setLoading(false);
-    } catch (error: unknown) {
-      const apiError = error as ApiError;
-      console.error("Error fetching categories:", error);
-      if (apiError.response?.status === 401) {
-        toast.error(language === 'ar' ? 'انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى' : 'Session expired, please login again');
-      } else {
-        toast.error(language === 'ar' ? 'فشل في تحميل الفئات' : 'Failed to load categories');
-      }
-      setCategories([]);
-      setLoading(false);
     }
-  };
+  }, [categoriesData, mealsData]);
+
+  // Handle errors
+  useEffect(() => {
+    if (error) {
+      showApiErrorToast(error, 'فشل في تحميل الفئات');
+    }
+  }, [error]);
 
   // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -206,40 +169,27 @@ const CategoriesPage = () => {
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCategory.name.en || !newCategory.name.ar || !newCategory.image) {
-      toast.error("Please provide name in both English and Arabic, and an image");
+      showApiErrorToast(null, "Please provide name in both English and Arabic, and an image");
       return;
     }
-
     const formData = new FormData();
     formData.append("name[en]", newCategory.name.en);
     formData.append("name[ar]", newCategory.name.ar);
     formData.append("description[en]", newCategory.description.en);
     formData.append("description[ar]", newCategory.description.ar);
     formData.append("image", newCategory.image);
-
     try {
-      const token = localStorage.getItem("token");
       await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/categories`,
         formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success("Category added successfully");
-      fetchCategories();
+      mutate();
       setIsModalOpen(false);
-      setNewCategory({
-        name: { en: "", ar: "" },
-        description: { en: "", ar: "" },
-        image: null,
-        imagePreview: "",
-      });
+      setNewCategory({ name: { en: "", ar: "" }, description: { en: "", ar: "" }, image: null, imagePreview: "" });
     } catch (error) {
-      console.error("Error adding category:", error);
-      toast.error("Failed to add category");
+      showApiErrorToast(error, "Failed to add category");
     }
   };
 
@@ -258,18 +208,13 @@ const CategoriesPage = () => {
     }
 
     try {
-      const token = localStorage.getItem("token");
       await axios.put(
         `${process.env.NEXT_PUBLIC_API_URL}/categories/${editingCategory._id}`,
         formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success("Category updated successfully");
-      fetchCategories();
+      mutate();
       setEditingCategory(null);
       setNewCategory({
         name: { en: "", ar: "" },
@@ -278,8 +223,7 @@ const CategoriesPage = () => {
         imagePreview: "",
       });
     } catch (error) {
-      console.error("Error updating category:", error);
-      toast.error("Failed to update category");
+      showApiErrorToast(error, "Failed to update category");
     }
   };
 
@@ -288,28 +232,34 @@ const CategoriesPage = () => {
     const confirmed = window.confirm(language === 'ar' ? 'هل أنت متأكد من حذف هذه الفئة؟' : 'Are you sure you want to delete this category?');
     if (confirmed) {
       try {
-        const token = localStorage.getItem("token");
-        await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/categories/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setCategories(categories.filter((category) => category._id !== id));
+        await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/categories/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+        mutate();
         toast.success(language === 'ar' ? 'تم حذف الفئة بنجاح' : 'Category deleted successfully');
       } catch (error) {
-        const apiError = error as ApiError;
-        console.error("Error deleting category:", error);
-        toast.error(apiError.message || (language === 'ar' ? 'فشل في حذف الفئة' : 'Failed to delete category'));
+        showApiErrorToast(error, language === 'ar' ? 'فشل في حذف الفئة' : 'Failed to delete category');
       }
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#eee]">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <div className="text-gray-600 font-medium">
+            Loading...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#eee]">
+        <div className="text-center">
+          <div className="text-red-600 font-medium">
+            فشل في تحميل الفئات
           </div>
         </div>
       </div>

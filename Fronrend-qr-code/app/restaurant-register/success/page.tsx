@@ -57,7 +57,7 @@ export default function SuccessPage() {
 
         <button
           onClick={handleLogin}
-          className="w-full py-3 bg-[#222] text-white rounded-lg font-semibold hover:bg-[#333] transition"
+          className="w-full py-3 bg-[#222] text-white rounded-lg font-semibold hover:bg-[#333] transition cursor-pointer"
         >
           {translations.login[language]}
         </button>

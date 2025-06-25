@@ -103,8 +103,6 @@ export const createMeal = async (req, res, next) => {
     res.status(201).json(mealObj);
 
   } catch (error) {
-    console.log('Request file:', req.file);
-    console.log('Request body:', req.body);
     console.error('Error stack trace:', error.stack);
     next(error); 
   }

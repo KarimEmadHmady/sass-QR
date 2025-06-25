@@ -238,7 +238,6 @@ export default function RestaurantPage() {
 
     const fetchData = async () => {
       if (!token || !authRestaurant) {
-        console.log('No auth data, redirecting to login');
         router.push('/restaurant-login');
         return;
       }
@@ -257,7 +256,6 @@ export default function RestaurantPage() {
         if (!isMounted) return;
 
         if (restaurantResponse.status === 401) {
-          console.log('Token expired or invalid, redirecting to login');
           toast.error(language === 'ar' ? 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.' : 'Session expired. Please login again.');
           router.push('/restaurant-login');
           return;
@@ -298,10 +296,7 @@ export default function RestaurantPage() {
           })
         ]);
 
-        if (!isMounted) return;
-
         if (mealsResponse.status === 401 || categoriesResponse.status === 401) {
-          console.log('Token expired or invalid during data fetch, redirecting to login');
           toast.error(language === 'ar' ? 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.' : 'Session expired. Please login again.');
           router.push('/restaurant-login');
           return;
@@ -358,7 +353,6 @@ export default function RestaurantPage() {
         console.error('Error fetching data:', error);
         if (error instanceof Error) {
           if (error.name === 'AbortError') {
-            console.log('Fetch aborted');
             return;
           }
           if (error.message.includes('Failed to fetch')) {
@@ -387,7 +381,6 @@ export default function RestaurantPage() {
   // Add a separate effect to handle authRestaurant changes
   useEffect(() => {
     if (!authRestaurant && token) {
-      console.log('No restaurant data, redirecting to login');
       router.push('/restaurant-login');
     }
   }, [authRestaurant, token, router]);
@@ -475,14 +468,12 @@ export default function RestaurantPage() {
     try {
       // Check authentication
       if (!token) {
-        console.log('No token found, redirecting to login');
         toast.error(language === 'ar' ? 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.' : 'Session expired. Please login again.');
         router.push('/restaurant-login');
         return;
       }
 
       if (!authRestaurant?._id) {
-        console.log('No restaurant ID found');
         toast.error(language === 'ar' ? 'لم يتم العثور على بيانات المطعم. يرجى تسجيل الدخول مرة أخرى.' : 'Restaurant data not found. Please login again.');
         router.push('/restaurant-login');
         return;
@@ -516,16 +507,6 @@ export default function RestaurantPage() {
         formData.append('banner', bannerFile);
       }
 
-      console.log('Sending update request with data:', {
-        name: editedRestaurant.name,
-        phone: editedRestaurant.phone,
-        address: editedRestaurant.address,
-        description: editedRestaurant.description,
-        settings: settings,
-        hasLogo: !!logoFile,
-        hasBanner: !!bannerFile
-      });
-
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/profile`, {
         method: 'PUT',
         headers: {
@@ -534,12 +515,9 @@ export default function RestaurantPage() {
         body: formData
       });
 
-      console.log('Response status:', response.status);
       const responseData = await response.json();
-      console.log('Response data:', responseData);
 
       if (response.status === 401) {
-        console.log('Token expired during save, redirecting to login');
         toast.error(language === 'ar' ? 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.' : 'Session expired. Please login again.');
         router.push('/restaurant-login');
         return;
@@ -549,25 +527,6 @@ export default function RestaurantPage() {
         throw new Error(responseData.message || t.profileUpdateError);
       }
       
-      console.log('Profile updated successfully:', responseData);
-      
-      // Update the local state with the new data
-      if (responseData.restaurant) {
-        // Preserve subscription data when updating
-        const updatedRestaurant = {
-          ...responseData.restaurant,
-          subscription: authRestaurant.subscription // Keep existing subscription data
-        };
-        
-        // Update the auth context with new restaurant data
-        if (typeof window !== 'undefined') {
-          const event = new CustomEvent('restaurantUpdated', {
-            detail: updatedRestaurant
-          });
-          window.dispatchEvent(event);
-        }
-      }
-
       toast.success(t.profileUpdateSuccess);
       setIsEditing(false);
       
@@ -624,12 +583,10 @@ export default function RestaurantPage() {
   const getRemainingTrialTime = () => {
     
     if (!authRestaurant?.subscription) {
-      console.log('No subscription data found');
       return null;
     }
 
     if (!authRestaurant.subscription.trialEndsAt) {
-      console.log('No trial end date found');
       return null;
     }
 
@@ -644,17 +601,13 @@ export default function RestaurantPage() {
       if (mongoDate.$date?.$numberLong) {
         trialEnd = new Date(parseInt(mongoDate.$date.$numberLong));
       } else {
-        console.log('Invalid trial end date format:', authRestaurant.subscription.trialEndsAt);
         return null;
       }
     }
 
     const diff = trialEnd.getTime() - now.getTime();
 
-
-
     if (diff <= 0) {
-      console.log('Trial has expired');
       return null;
     }
 

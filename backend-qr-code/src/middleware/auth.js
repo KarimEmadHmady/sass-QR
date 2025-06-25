@@ -13,11 +13,9 @@ export const authenticate = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
-    console.log('Decoded token:', decoded);
 
     if (!decoded.role || decoded.role === 'restaurant') {
       const restaurant = await Restaurant.findById(decoded.id);
-      console.log('Found restaurant:', restaurant);
 
       if (!restaurant) {
         return res.status(404).json({ message: 'Restaurant not found' });
@@ -43,8 +41,6 @@ export const authenticate = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
-
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({ message: 'Invalid token' });
     }
