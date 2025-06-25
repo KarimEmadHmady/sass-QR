@@ -238,9 +238,22 @@ export default function RestaurantPage() {
     const controller = new AbortController();
 
     const fetchData = async () => {
+      // Add a small delay to allow auth context to initialize
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       if (!token || !authRestaurant) {
-        router.push('/restaurant-login');
-        return;
+        // Only redirect if we're sure there's no auth data
+        if (token && !authRestaurant) {
+          // Token exists but no restaurant data - wait a bit more
+          await new Promise(resolve => setTimeout(resolve, 500));
+          if (!authRestaurant) {
+            router.push('/restaurant-login');
+            return;
+          }
+        } else if (!token) {
+          router.push('/restaurant-login');
+          return;
+        }
       }
 
       try {
@@ -378,13 +391,6 @@ export default function RestaurantPage() {
       controller.abort();
     };
   }, [token, language, router]);
-
-  // Add a separate effect to handle authRestaurant changes
-  useEffect(() => {
-    if (!authRestaurant && token) {
-      router.push('/restaurant-login');
-    }
-  }, [authRestaurant, token, router]);
 
   const handleEdit = () => {
     if (authRestaurant) {
