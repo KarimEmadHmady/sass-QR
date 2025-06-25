@@ -48,11 +48,10 @@ export default function RestaurantLoginPage() {
       // Show loading screen for 3 seconds
       setRedirecting(true);
       
-      setTimeout(() => {
-        // Redirect to subdomain with auto-login data
-        const redirectUrl = `http://${restaurant.subdomain}.localhost:3000/dashboard?token=${token}&restaurant=${encodeURIComponent(JSON.stringify(restaurant))}`;
-        window.location.replace(redirectUrl);
-      }, 3000);
+      // Redirect to subdomain with auto-login data
+      const redirectUrl = `http://${restaurant.subdomain}.localhost:3000/dashboard?token=${token}&restaurant=${encodeURIComponent(JSON.stringify(restaurant))}`;
+      window.location.replace(redirectUrl);
+
       
     } catch (error) {
       console.error('Login error:', error);
