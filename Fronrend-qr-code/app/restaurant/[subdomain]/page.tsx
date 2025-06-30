@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/store';
+import { useLanguage } from '@/store';
 import { QRCodeCanvas } from 'qrcode.react';
 import { FaQrcode, FaGlobe } from 'react-icons/fa';
 import { toast } from "react-hot-toast";
@@ -215,7 +215,7 @@ function getDescriptionObj(desc: string | { en: string; ar: string; } | undefine
 }
 
 export default function RestaurantPage() {
-  const { restaurant: authRestaurant, token } = useAuth();
+  const { restaurant: authRestaurant, token, updateRestaurant } = useAuth();
   const { language } = useLanguage();
   const t = translations[language];
   const [loading, setLoading] = useState(true);
@@ -480,7 +480,7 @@ export default function RestaurantPage() {
         return;
       }
 
-      if (!authRestaurant?._id) {
+      if (!authRestaurant || (!authRestaurant._id && !authRestaurant.id)) {
         toast.error(language === 'ar' ? 'لم يتم العثور على بيانات المطعم. يرجى تسجيل الدخول مرة أخرى.' : 'Restaurant data not found. Please login again.');
         router.push('/restaurant-login');
         return;
@@ -543,24 +543,17 @@ export default function RestaurantPage() {
       setLogoPreview(null);
       setBannerPreview(null);
       
-      // Instead of reloading the page, update the local state
+      // Update Redux store with new restaurant data
       if (responseData.restaurant) {
-        setEditedRestaurant({
-          name: responseData.restaurant.name,
-          phone: responseData.restaurant.phone,
-          address: responseData.restaurant.address,
-          description: responseData.restaurant.description,
+        const updatedRestaurantData = {
+          ...authRestaurant,
+          ...responseData.restaurant,
           settings: {
-            currency: responseData.restaurant.settings.currency,
-            language: responseData.restaurant.settings.language,
-            socialMedia: {
-              facebook: responseData.restaurant.settings.socialMedia?.facebook || '',
-              instagram: responseData.restaurant.settings.socialMedia?.instagram || '',
-              tiktok: responseData.restaurant.settings.socialMedia?.tiktok || ''
-            },
-            location: responseData.restaurant.settings.location || ''
+            ...authRestaurant.settings,
+            ...responseData.restaurant.settings
           }
-        });
+        };
+        updateRestaurant(updatedRestaurantData);
       }
     } catch (error) {
       console.error('Error updating profile:', error);

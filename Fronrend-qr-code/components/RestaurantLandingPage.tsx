@@ -1,6 +1,6 @@
 "use client";
 
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useLanguage } from "@/store";
 import Link from "next/link";
 import { FaQrcode, FaChartLine, FaUsers, FaMobileAlt, FaShieldAlt, FaClock, FaCheck, FaUtensils, FaStar, FaGlobe, FaCog, FaPercent } from 'react-icons/fa';
 import { SiGoogle } from 'react-icons/si';

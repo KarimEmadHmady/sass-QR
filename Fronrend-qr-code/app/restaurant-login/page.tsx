@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/store";
+import { useLanguage } from "@/store";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { toast } from "react-hot-toast";
 import { setAuthData } from "@/utils/storage";

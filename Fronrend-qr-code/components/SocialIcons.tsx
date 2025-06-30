@@ -1,10 +1,10 @@
 "use client";
 
-import { FaFacebookF, FaInstagram, FaTiktok, FaGoogle } from "react-icons/fa";
+import { FaFacebook, FaInstagram, FaTiktok, FaGoogle } from "react-icons/fa";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { useEffect, useState } from "react";
-import { useSubdomain } from "@/contexts/SubdomainContext";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useSubdomain } from "@/store";
+import { useLanguage } from "@/store";
 
 interface Restaurant {
   settings: {
@@ -77,7 +77,7 @@ const SocialIcons = () => {
             rel="noopener noreferrer"
             className="bg-white p-2 rounded-full shadow hover:bg-blue-100 transition"
           >
-            <FaFacebookF className="text-blue-600 w-5 h-5" />
+            <FaFacebook className="text-blue-600 w-5 h-5" />
           </a>
 
           <a
@@ -137,7 +137,7 @@ const SocialIcons = () => {
           rel="noopener noreferrer"
           className="bg-white p-2 rounded-full shadow hover:bg-blue-100 transition"
         >
-          <FaFacebookF className="text-blue-600 w-5 h-5" />
+          <FaFacebook className="text-blue-600 w-5 h-5" />
         </a>
 
         <a

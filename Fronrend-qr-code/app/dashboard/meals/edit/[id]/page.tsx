@@ -6,7 +6,7 @@ import AnimatedBackground from "@/components/AnimatedBackground";
 import Image from 'next/image';
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/store";
 
 interface Translation {
   en: string;

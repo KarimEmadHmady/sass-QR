@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/store";
+import { useLanguage } from "@/store";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { setAuthData } from "@/utils/storage";
 

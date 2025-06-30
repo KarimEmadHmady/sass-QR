@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { SubdomainProvider } from "../contexts/SubdomainContext";
 import Navbar from "@/components/Navbar";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { LanguageProvider } from "@/contexts/LanguageContext";
 import SocialIcons from "@/components/SocialIcons";
 import ScrollToTop from "@/components/ScrollToTop";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Toaster } from 'react-hot-toast'
+import { StoreProvider } from "@/store";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,18 +24,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <SubdomainProvider>
-          <AuthProvider>
-            <LanguageProvider>
-              <ScrollToTop />
-              <Navbar />
-              {children}
-              <SocialIcons />
-              <ToastContainer />
-              <Toaster position="top-center" />
-            </LanguageProvider>
-          </AuthProvider>
-        </SubdomainProvider>
+        <StoreProvider>
+          <ScrollToTop />
+          <Navbar />
+          {children}
+          <SocialIcons />
+          <ToastContainer />
+          <Toaster position="top-center" />
+        </StoreProvider>
       </body>
     </html>
   );

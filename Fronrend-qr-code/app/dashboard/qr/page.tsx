@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/store";
 import { useRouter } from "next/navigation";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useLanguage } from "@/store";
 import { QRCodeCanvas } from "qrcode.react";
 import { FaDownload } from "react-icons/fa";
 

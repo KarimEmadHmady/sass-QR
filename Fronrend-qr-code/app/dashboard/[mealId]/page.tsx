@@ -6,7 +6,7 @@ import "react-toastify/dist/ReactToastify.css"
 
 import { useParams } from "next/navigation"
 import { useEffect, useState, useCallback } from "react"
-import { useAuth } from "@/contexts/AuthContext"
+import { useAuth } from "@/store";
 import Image from "next/image"
 import AnimatedBackground from "@/components/AnimatedBackground"
 

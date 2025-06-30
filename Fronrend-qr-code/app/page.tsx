@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { Star, Utensils, Clock, Search, Menu, X } from "lucide-react";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import Image from "next/image";
-import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from "@/store";
+import { useLanguage } from '@/store';
 import { toast } from "react-hot-toast";
 import Link from "next/link";
 import RestaurantLandingPage from "@/components/RestaurantLandingPage";
@@ -107,6 +107,33 @@ const HomePage: React.FC = () => {
       <path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>
     </svg>
   );
+
+  // Memoized values to prevent unnecessary recalculations
+  const categoryNames = useMemo(() => ["all", ...categories.map(category => category._id)], [categories]);
+
+  const filteredMeals = useMemo(() => {
+    return meals.filter(meal => {
+      const matchesSearch =
+        (meal.name?.ar?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        meal.name?.en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        meal.description?.ar?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        meal.description?.en?.toLowerCase().includes(searchTerm.toLowerCase())) ?? false;
+      
+      const matchesCategory =
+        activeCategory === "all" || 
+        meal.category?._id === activeCategory;
+      
+      return matchesSearch && matchesCategory;
+    });
+  }, [meals, searchTerm, activeCategory]);
+
+  const getCategoryLabel = (categoryId: string) => {
+    if (categoryId === "all") {
+      return language === 'ar' ? "عرض الكل" : "All";
+    }
+    const category = categories.find(c => c._id === categoryId);
+    return language === 'ar' ? category?.name?.ar || "غير مصنف" : category?.name?.en || "Uncategorized";
+  };
 
   useEffect(() => {
     const checkSubdomain = () => {
@@ -226,7 +253,7 @@ const HomePage: React.FC = () => {
     };
 
     fetchData();
-  }, [language, hasSubdomain]);
+  }, [hasSubdomain]);
 
   useEffect(() => {
     const fetchRestaurantBySubdomain = async () => {
@@ -257,37 +284,13 @@ const HomePage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Hide tap indicator after 5 seconds
+    // Hide tap indicator after 15 seconds
     const timer = setTimeout(() => {
       setShowTapIndicator(false);
     }, 15000);
 
     return () => clearTimeout(timer);
   }, []);
-
-  const categoryNames = ["all", ...categories.map(category => category._id)];
-
-  const getCategoryLabel = (categoryId: string) => {
-    if (categoryId === "all") {
-      return language === 'ar' ? "عرض الكل" : "All";
-    }
-    const category = categories.find(c => c._id === categoryId);
-    return language === 'ar' ? category?.name?.ar || "غير مصنف" : category?.name?.en || "Uncategorized";
-  };
-
-  const filteredMeals = meals.filter(meal => {
-    const matchesSearch =
-      (meal.name?.ar?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      meal.name?.en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      meal.description?.ar?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      meal.description?.en?.toLowerCase().includes(searchTerm.toLowerCase())) ?? false;
-    
-    const matchesCategory =
-      activeCategory === "all" || 
-      meal.category?._id === activeCategory;
-    
-    return matchesSearch && matchesCategory;
-  });
 
   const renderStars = (rating: number, lang: string): React.ReactNode => {
     return (

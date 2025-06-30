@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/store/useAuth";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";

@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { useAuth } from "@/store";
 import { useRouter } from "next/navigation";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useLanguage } from "@/store";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import Image from 'next/image';
 import { FaUtensils, FaTags, FaStar, FaQrcode, FaClock, FaEdit, FaTrash, FaMoneyBill, FaGlobe } from 'react-icons/fa';
@@ -71,200 +71,8 @@ export default function RestaurantDashboard() {
   const [loading, setLoading] = useState(true);
   const [showSubscriptionWarning, setShowSubscriptionWarning] = useState(false);
 
-  useEffect(() => {
-    const initializeAuth = async () => {
-      // Check for token and restaurant data in URL (auto-login from main domain)
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlToken = urlParams.get('token');
-      const restaurantData = urlParams.get('restaurant');
-      
-      if (urlToken && restaurantData && !isAuthenticated) {
-        try {
-          // Parse restaurant data
-          const restaurant = JSON.parse(decodeURIComponent(restaurantData));
-          
-          // Save to localStorage
-          localStorage.setItem('token', urlToken);
-          localStorage.setItem('restaurant', JSON.stringify(restaurant));
-          
-          // Update auth context
-          await login(restaurant, urlToken);
-          
-          // Remove data from URL
-          window.history.replaceState({}, document.title, window.location.pathname);
-          
-          // Fetch data immediately after login
-          fetchData();
-          return;
-        } catch (error) {
-          console.error('Error processing auto-login data:', error);
-        }
-      }
-
-      // If no URL data but we have localStorage data, try to use it
-      if (!isAuthenticated) {
-        const storedToken = localStorage.getItem('token');
-        const storedRestaurant = localStorage.getItem('restaurant');
-        
-        if (storedToken && storedRestaurant) {
-          try {
-            const restaurant = JSON.parse(storedRestaurant);
-            await login(restaurant, storedToken);
-            // Fetch data immediately after login
-            fetchData();
-            return;
-          } catch (error) {
-            console.error('Error processing stored data:', error);
-            // Clear invalid data
-            localStorage.removeItem('token');
-            localStorage.removeItem('restaurant');
-          }
-        }
-      }
-      
-      // If we're already authenticated, fetch data
-      if (isAuthenticated && token) {
-        fetchData();
-      } else {
-        setLoading(false);
-      }
-    };
-
-    const fetchData = async () => {
-      try {
-        // Check if user is authenticated
-        if (!isAuthenticated || !token) {
-          router.push('/restaurant-login');
-          return;
-        }
-
-        // Fetch restaurant profile to get trial information
-        const restaurantRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/profile`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-    
-        if (!restaurantRes.ok) {
-          if (restaurantRes.status === 401) {
-            // Token is invalid, redirect to login
-            router.push('/restaurant-login');
-            return;
-          }
-          // For other errors, show error but don't redirect
-          console.error(`Failed to fetch restaurant profile: ${restaurantRes.status}`);
-          setStats({
-            totalReviews: 0,
-            totalMeals: 0,
-            totalCategories: 0,
-            averageMealPrice: 0,
-            averageRating: 0,
-            subscriptionStatus: 'trial',
-            trialDaysLeft: 0
-          });
-          setMeals([]);
-          setLoading(false);
-          return;
-        }
-    
-        const restaurantData = await restaurantRes.json();
-    
-        // Calculate remaining trial days
-        const trialEndsAt = new Date(restaurantData.subscription.trialEndsAt);
-        const now = new Date();
-        const diff = trialEndsAt.getTime() - now.getTime();
-        const remainingDays = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const remainingHours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const trialDaysLeft = remainingDays + (remainingHours > 0 ? 1 : 0);
-
-        // Check subscription status
-        if (restaurantData.subscription.status === 'expired') {
-          setShowSubscriptionWarning(true);
-        }
-    
-        // Fetch meals and categories in parallel
-        const [mealsRes, categoriesRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/meals`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }),
-        ]);
-
-        if (!mealsRes.ok || !categoriesRes.ok) {
-          throw new Error('Failed to fetch data');
-        }
-
-        const [mealsData, categoriesData] = await Promise.all([
-          mealsRes.json(),
-          categoriesRes.json(),
-        ]);
-
-        setMeals(mealsData);
-        
-        // Calculate stats
-        const totalReviews = mealsData.reduce((sum: number, meal: Meal) => 
-          sum + (meal.reviews?.length || 0), 0
-        );
-        
-        const totalMealPrice = mealsData.reduce((sum: number, meal: Meal) => 
-          sum + (meal.isDiscountActive && meal.discountedPrice ? meal.discountedPrice : meal.price), 0
-        );
-        
-        const averageMealPrice = mealsData.length > 0 ? totalMealPrice / mealsData.length : 0;
-        
-        const totalRating = mealsData.reduce((sum: number, meal: Meal) => 
-          sum + (meal.rating || 0), 0
-        );
-        
-        const averageRating = mealsData.length > 0 ? totalRating / mealsData.length : 0;
-
-        setStats({
-          totalReviews,
-          totalMeals: mealsData.length,
-          totalCategories: categoriesData.length,
-          averageMealPrice,
-          averageRating,
-          subscriptionStatus: restaurantData.subscription.status,
-          trialDaysLeft
-        });
-
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        toast.error(language === 'ar' ? 'فشل في تحميل البيانات' : 'Failed to load data');
-        setLoading(false);
-      }
-    };
-
-    initializeAuth();
-  }, [isAuthenticated, token, router, language, login]);
-
-  const deleteMeal = async (id: string) => {
-    const confirmed = window.confirm(language === 'ar' ? 'هل أنت متأكد من حذف هذه الوجبة؟' : 'Are you sure you want to delete this meal?');
-    if (confirmed) {
-      try {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/meals/${id}`, {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setMeals(meals.filter(meal => meal._id !== id));
-        toast.success(language === 'ar' ? 'تم حذف الوجبة بنجاح' : 'Meal deleted successfully');
-      } catch (error) {
-        console.error("Error deleting meal:", error);
-        toast.error(language === 'ar' ? 'حدث خطأ أثناء حذف الوجبة' : 'Error deleting meal');
-      }
-    }
-  };
-
-  const translations = {
+  // Memoized translations to prevent unnecessary recalculations
+  const translations = useMemo(() => ({
     dashboard: {
       en: "Restaurant Dashboard",
       ar: "لوحة تحكم المطعم"
@@ -349,8 +157,201 @@ export default function RestaurantDashboard() {
       en: "We are waiting for you",
       ar: "نحن فى انتظارك"
     }
+  }), []); // Empty dependency array since translations are static
 
-  };
+  // Memoized functions to prevent unnecessary re-renders
+  const fetchData = useCallback(async () => {
+    try {
+      // Check if user is authenticated
+      if (!isAuthenticated || !token) {
+        router.push('/restaurant-login');
+        return;
+      }
+
+      // Fetch restaurant profile to get trial information
+      const restaurantRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/profile`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      if (!restaurantRes.ok) {
+        if (restaurantRes.status === 401) {
+          // Token is invalid, redirect to login
+          router.push('/restaurant-login');
+          return;
+        }
+        // For other errors, show error but don't redirect
+        console.error(`Failed to fetch restaurant profile: ${restaurantRes.status}`);
+        setStats({
+          totalReviews: 0,
+          totalMeals: 0,
+          totalCategories: 0,
+          averageMealPrice: 0,
+          averageRating: 0,
+          subscriptionStatus: 'trial',
+          trialDaysLeft: 0
+        });
+        setMeals([]);
+        setLoading(false);
+        return;
+      }
+  
+      const restaurantData = await restaurantRes.json();
+  
+      // Calculate remaining trial days
+      const trialEndsAt = new Date(restaurantData.subscription.trialEndsAt);
+      const now = new Date();
+      const diff = trialEndsAt.getTime() - now.getTime();
+      const remainingDays = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const remainingHours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const trialDaysLeft = remainingDays + (remainingHours > 0 ? 1 : 0);
+
+      // Check subscription status
+      if (restaurantData.subscription.status === 'expired') {
+        setShowSubscriptionWarning(true);
+      }
+  
+      // Fetch meals and categories in parallel
+      const [mealsRes, categoriesRes] = await Promise.all([
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/meals`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+      ]);
+
+      if (!mealsRes.ok || !categoriesRes.ok) {
+        throw new Error('Failed to fetch data');
+      }
+
+      const [mealsData, categoriesData] = await Promise.all([
+        mealsRes.json(),
+        categoriesRes.json(),
+      ]);
+
+      setMeals(mealsData);
+      
+      // Calculate stats
+      const totalReviews = mealsData.reduce((sum: number, meal: Meal) => 
+        sum + (meal.reviews?.length || 0), 0
+      );
+      
+      const totalMealPrice = mealsData.reduce((sum: number, meal: Meal) => 
+        sum + (meal.isDiscountActive && meal.discountedPrice ? meal.discountedPrice : meal.price), 0
+      );
+      
+      const averageMealPrice = mealsData.length > 0 ? totalMealPrice / mealsData.length : 0;
+      
+      const totalRating = mealsData.reduce((sum: number, meal: Meal) => 
+        sum + (meal.rating || 0), 0
+      );
+      
+      const averageRating = mealsData.length > 0 ? totalRating / mealsData.length : 0;
+
+      setStats({
+        totalReviews,
+        totalMeals: mealsData.length,
+        totalCategories: categoriesData.length,
+        averageMealPrice,
+        averageRating,
+        subscriptionStatus: restaurantData.subscription.status,
+        trialDaysLeft
+      });
+
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      toast.error(language === 'ar' ? 'فشل في تحميل البيانات' : 'Failed to load data');
+      setLoading(false);
+    }
+  }, [isAuthenticated, token, router, language]);
+
+  const initializeAuth = useCallback(async () => {
+    // Check for token and restaurant data in URL (auto-login from main domain)
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlToken = urlParams.get('token');
+    const restaurantData = urlParams.get('restaurant');
+    
+    if (urlToken && restaurantData && !isAuthenticated) {
+      try {
+        // Parse restaurant data
+        const restaurant = JSON.parse(decodeURIComponent(restaurantData));
+        
+        // Save to localStorage
+        localStorage.setItem('token', urlToken);
+        localStorage.setItem('restaurant', JSON.stringify(restaurant));
+        
+        // Update auth context
+        await login(restaurant, urlToken);
+        
+        // Remove data from URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Fetch data immediately after login
+        fetchData();
+        return;
+      } catch (error) {
+        console.error('Error processing auto-login data:', error);
+      }
+    }
+
+    // If no URL data but we have localStorage data, try to use it
+    if (!isAuthenticated) {
+      const storedToken = localStorage.getItem('token');
+      const storedRestaurant = localStorage.getItem('restaurant');
+      
+      if (storedToken && storedRestaurant) {
+        try {
+          const restaurant = JSON.parse(storedRestaurant);
+          await login(restaurant, storedToken);
+          // Fetch data immediately after login
+          fetchData();
+          return;
+        } catch (error) {
+          console.error('Error processing stored data:', error);
+          // Clear invalid data
+          localStorage.removeItem('token');
+          localStorage.removeItem('restaurant');
+        }
+      }
+    }
+    
+    // If we're already authenticated, fetch data
+    if (isAuthenticated && token) {
+      fetchData();
+    } else {
+      setLoading(false);
+    }
+  }, [isAuthenticated, token, login, fetchData]);
+
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
+
+  const deleteMeal = useCallback(async (id: string) => {
+    const confirmed = window.confirm(language === 'ar' ? 'هل أنت متأكد من حذف هذه الوجبة؟' : 'Are you sure you want to delete this meal?');
+    if (confirmed) {
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/meals/${id}`, {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setMeals(meals.filter(meal => meal._id !== id));
+        toast.success(language === 'ar' ? 'تم حذف الوجبة بنجاح' : 'Meal deleted successfully');
+      } catch (error) {
+        console.error("Error deleting meal:", error);
+        toast.error(language === 'ar' ? 'حدث خطأ أثناء حذف الوجبة' : 'Error deleting meal');
+      }
+    }
+  }, [language, token, meals]);
 
   if (loading) {
     return (
@@ -608,12 +609,12 @@ export default function RestaurantDashboard() {
                         >
                           <FaEdit className="text-xl" />
                         </Link>
-                            <button
+                        <button
                           onClick={() => deleteMeal(meal._id)}
                           className="text-red-600 hover:text-red-800"
                         >
                           <FaTrash className="text-xl" />
-                            </button>
+                        </button>
                       </div>
                     </div>
                   </div>

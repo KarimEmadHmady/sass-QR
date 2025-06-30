@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/store";
 import { useRouter } from "next/navigation";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useLanguage } from "@/store";
 import {
   FaUserShield,
   FaUtensils,
