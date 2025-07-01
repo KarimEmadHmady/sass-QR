@@ -7,6 +7,7 @@ import { SiGoogle } from 'react-icons/si';
 import AnimatedBackground from "./AnimatedBackground";
 import SystemPreviewSlider from "./SystemPreviewSlider";
 import SystemPreviewSliderMop from "./SystemPreviewSliderMob";
+import Image from "next/image";
 
 const translations = {
   en: {
@@ -277,6 +278,58 @@ export default function RestaurantLandingPage() {
   const { language } = useLanguage();
   const t = translations[language];
 
+  // ترجمة سيكشن التواصل
+  const contactSection = {
+    ar: {
+      title: "تواصل معنا الآن",
+      desc: "للاستفسار وطلب الخدمة تواصل معنا مباشرة على الواتساب، فريقنا جاهز لمساعدتك في أي وقت!",
+      btn: "تواصل واتساب"
+    },
+    en: {
+      title: "Contact Us Now",
+      desc: "For inquiries and service requests, contact us directly on WhatsApp. Our team is ready to help you anytime!",
+      btn: "Contact via WhatsApp"
+    }
+  };
+
+  // ترجمة سيكشن الخصومات
+  const discountSection = {
+    ar: {
+      title: "برنامج الخصومات الذكي",
+      desc: "يمكنك بسهولة عمل خصم على أي وجبة أو مشروب في دقائق! حدد الوجبة، نسبة الخصم، الوقت والتاريخ ومدة الأيام، وسيظهر الخصم تلقائيًا للعميل مع السعر القديم والجديد ونسبة الخصم بشكل واضح وجذاب.",
+      points: [
+        "تحديد الخصم لأي صنف (وجبة أو مشروب)",
+        "تخصيص وقت وتاريخ بداية ونهاية الخصم",
+        "عرض نسبة الخصم والسعر القديم والجديد للعميل",
+        "سهولة تفعيل وإلغاء الخصومات في أي وقت"
+      ],
+      example: {
+        discount: "خصم 30%",
+        meal: "بيتزا مارجريتا",
+        oldPrice: "120 EGP",
+        newPrice: "84 EGP",
+        until: "الخصم ساري حتى 10 مساءً"
+      }
+    },
+    en: {
+      title: "Smart Discount Program",
+      desc: "Easily create a discount on any meal or drink in minutes! Select the item, discount percentage, time, date, and duration. The discount will automatically appear to customers with the old and new prices and the discount percentage, all in a clear and attractive way.",
+      points: [
+        "Set a discount for any item (meal or drink)",
+        "Customize start and end time and date for the discount",
+        "Show discount percentage, old and new prices to customers",
+        "Easily activate or cancel discounts anytime"
+      ],
+      example: {
+        discount: "30% OFF",
+        meal: "Margherita Pizza",
+        oldPrice: "120 EGP",
+        newPrice: "84 EGP",
+        until: "Discount valid until 10 PM"
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen ">
 <AnimatedBackground/>
@@ -298,7 +351,7 @@ export default function RestaurantLandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-[35px]">
+      <section className="py-[35px] ">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 bg-gradient-to-r from-purple-900 to-indigo-900 bg-clip-text text-transparent">{t.features.title}</h2>
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-6 gap-8">
@@ -413,8 +466,67 @@ export default function RestaurantLandingPage() {
           </p>
           
           <SystemPreviewSlider />
-          <br></br>
-          <SystemPreviewSliderMop/>
+
+          {/* Discount Program Section */}
+          <section className="my-6 md:my-10 flex flex-col items-center justify-center">
+            <div className="bg-gradient-to-r from-purple-800 via-indigo-800 to-purple-900 rounded-2xl md:rounded-3xl shadow-xl p-4 md:p-12 w-full max-w-xs md:max-w-3xl flex flex-col md:flex-row items-center gap-4 md:gap-8 relative overflow-hidden">
+              {/* أيقونة خصم */}
+              <div className="flex flex-col items-center md:items-start flex-1 mb-4 md:mb-0">
+                <div className="bg-white rounded-full p-2 md:p-4 mb-2 md:mb-4 shadow-lg border-4 border-black-500 animate-pulse">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 md:w-14 md:h-14 text-black-500" fill="currentColor" viewBox="0 0 24 24"><path d="M17.293 2.293a1 1 0 0 1 1.414 0l3 3a1 1 0 0 1 0 1.414l-14 14a1 1 0 0 1-.497.263l-5 1a1 1 0 0 1-1.213-1.213l1-5a1 1 0 0 1 .263-.497l14-14zm1.414-1.414-14 14a3 3 0 0 0-.789 1.494l-1 5A3 3 0 0 0 3.22 23.78l5-1a3 3 0 0 0 1.494-.789l14-14a3 3 0 0 0 0-4.242l-3-3a3 3 0 0 0-4.242 0zM5.5 20.5l-2-2 0 0 2 2zm2.793-1.207 10-10-2-2-10 10 2 2zm11.207-11.207-2-2 2 2z"/></svg>
+                </div>
+                <h3 className="text-lg md:text-3xl font-bold text-white mb-1 md:mb-2 drop-shadow-lg text-center md:text-left">{discountSection[language].title}</h3>
+                <p className="text-sm md:text-lg text-white/90 mb-2 md:mb-4 max-w-xs md:max-w-md leading-relaxed text-center md:text-left">{discountSection[language].desc}</p>
+                <ul className="text-white/90 text-xs md:text-base list-disc pl-4 md:pl-5">
+                  {discountSection[language].points.map((point, idx) => (
+                    <li key={idx}>{point}</li>
+                  ))}
+                </ul>
+              </div>
+              {/* مثال مرئي */}
+              <div className="flex-1 flex items-center justify-center">
+                <div className="relative bg-white rounded-xl md:rounded-2xl shadow-lg p-3 md:p-6 w-40 md:w-64 flex flex-col items-center border-2 border-black-400">
+                  <span className="absolute -top-3 -right-3 md:-top-4 md:-right-4 bg-black text-white text-xs md:text-lg font-bold px-2 md:px-4 py-1 rounded-full shadow-lg animate-bounce">{discountSection[language].example.discount}</span>
+                  <Image src="/pizza.png" alt={discountSection[language].example.meal} width={80} height={80} className="w-12 h-12 md:w-20 md:h-20 object-cover rounded-full mb-2 md:mb-3 border-4 border-purple-300" />
+                  <h4 className="text-base md:text-xl font-bold text-gray-800 mb-1 text-center">{discountSection[language].example.meal}</h4>
+                  <div className="flex items-center gap-1 md:gap-2 mb-1 md:mb-2">
+                    <span className="text-gray-400 line-through text-xs md:text-lg">{discountSection[language].example.oldPrice}</span>
+                    <span className="text-black-600 text-lg md:text-2xl font-bold">{discountSection[language].example.newPrice}</span>
+                  </div>
+                  <span className="text-black text-xs md:text-sm font-semibold text-center">{discountSection[language].example.until}</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <SystemPreviewSliderMop />
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section className="py-6 md:py-[35px]">
+        <div className="container mx-auto px-2 md:px-4">
+          <div className="relative bg-gradient-to-r from-purple-800 via-indigo-800 to-purple-900 rounded-2xl md:rounded-3xl shadow-xl p-4 md:p-10 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-8 overflow-hidden">
+            {/* واتساب أيقونة كبيرة */}
+            <div className="flex flex-col items-center md:items-start flex-1 mb-4 md:mb-0">
+              <div className="bg-white rounded-full p-2 md:p-4 mb-2 md:mb-4 shadow-lg border-4 border-green-500 animate-pulse">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 md:w-16 md:h-16 text-green-500" fill="currentColor" viewBox="0 0 24 24"><path d="M20.52 3.48A12.07 12.07 0 0 0 12 0C5.37 0 0 5.37 0 12a11.93 11.93 0 0 0 1.64 6.06L0 24l6.24-1.63A12.09 12.09 0 0 0 12 24c6.63 0 12-5.37 12-12a11.93 11.93 0 0 0-3.48-8.52zM12 22a10.07 10.07 0 0 1-5.19-1.42l-.37-.22-3.7.97.99-3.6-.24-.37A10.07 10.07 0 1 1 22 12c0 5.52-4.48 10-10 10zm5.47-7.14c-.3-.15-1.77-.87-2.04-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.27-.47-2.42-1.5-.9-.8-1.5-1.77-1.67-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.5-.5-.67-.5h-.57c-.17 0-.44.06-.67.3-.23.23-.88.86-.88 2.1s.9 2.44 1.03 2.61c.13.17 1.77 2.7 4.3 3.68.6.2 1.07.32 1.43.41.6.15 1.15.13 1.58.08.48-.07 1.47-.6 1.68-1.18.2-.58.2-1.08.13-1.18-.07-.1-.27-.15-.57-.3z"/></svg>
+              </div>
+              <h2 className="text-lg md:text-3xl font-extrabold text-white mb-1 md:mb-2 drop-shadow-lg text-center md:text-left">{contactSection[language].title}</h2>
+              <p className="text-sm md:text-lg text-gray-200 mb-2 md:mb-4 max-w-xs md:max-w-md leading-relaxed text-center md:text-left">{contactSection[language].desc}</p>
+            </div>
+            <a
+              href="https://wa.me/201155993133"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 md:gap-4 bg-green-500 hover:bg-green-600 text-white px-4 py-3 md:px-10 md:py-5 rounded-xl md:rounded-2xl text-base md:text-2xl font-bold transition shadow-xl hover:scale-105 focus:ring-4 focus:ring-green-300 animate-bounce"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 md:w-10 md:h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M20.52 3.48A12.07 12.07 0 0 0 12 0C5.37 0 0 5.37 0 12a11.93 11.93 0 0 0 1.64 6.06L0 24l6.24-1.63A12.09 12.09 0 0 0 12 24c6.63 0 12-5.37 12-12a11.93 11.93 0 0 0-3.48-8.52zM12 22a10.07 10.07 0 0 1-5.19-1.42l-.37-.22-3.7.97.99-3.6-.24-.37A10.07 10.07 0 1 1 22 12c0 5.52-4.48 10-10 10zm5.47-7.14c-.3-.15-1.77-.87-2.04-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.27-.47-2.42-1.5-.9-.8-1.5-1.77-1.67-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.5-.5-.67-.5h-.57c-.17 0-.44.06-.67.3-.23.23-.88.86-.88 2.1s.9 2.44 1.03 2.61c.13.17 1.77 2.7 4.3 3.68.6.2 1.07.32 1.43.41.6.15 1.15.13 1.58.08.48-.07 1.47-.6 1.68-1.18.2-.58.2-1.08.13-1.18-.07-.1-.27-.15-.57-.3z"/></svg>
+              {contactSection[language].btn}
+            </a>
+            <div className="absolute -top-10 -left-10 w-20 h-20 md:w-40 md:h-40 bg-green-400 opacity-20 rounded-full blur-2xl z-0"></div>
+            <div className="absolute -bottom-10 -right-10 w-20 h-20 md:w-40 md:h-40 bg-purple-400 opacity-20 rounded-full blur-2xl z-0"></div>
+          </div>
         </div>
       </section>
 
@@ -441,7 +553,7 @@ export default function RestaurantLandingPage() {
                     ))}
                   </ul>
                   <Link
-                    href="/restaurant-register"
+                    href="/contact-whatsapp"
                     className="block w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-center py-3 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition shadow-lg hover:shadow-xl"
                   >
                     {plan.cta}
