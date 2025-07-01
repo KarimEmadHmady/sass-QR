@@ -159,8 +159,17 @@ export default function Navbar() {
 
   return (
     <nav className=" p-4 bg-transition">
-      <div className="container mx-auto flex justify-between items-center">
-        <div className="flex items-center gap-4">
+      <div className="container mx-auto flex flex-row-reverse md:flex-row justify-between items-center">
+        <div className="flex flex-row-reverse md:flex-row items-center gap-4 w-auto">
+          {/* Mobile Menu Button */}
+          {isAuthenticated && restaurant && (
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden flex items-center gap-2 text-gray-600 hover:text-gray-900"
+            >
+              <FaBars className="w-6 h-6" />
+            </button>
+          )}
           <Link href="/" className="flex items-center gap-2">
             <Image
               src={currentRestaurant?.logo || "/logo.png"}
@@ -178,13 +187,13 @@ export default function Navbar() {
           <LanguageSwitcher />
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-row-reverse md:flex-row items-center gap-4">
           {isAuthenticated ? (
             <>
               {restaurant && (
                 <>
                   {/* Desktop Navigation */}
-                  <div className="hidden md:flex items-center gap-4">
+                  <div className="hidden md:flex items-center gap-4 ">
                   <Link
                     href="/dashboard"
                     className="flex items-center gap-2 text-gray-600 hover:text-gray-900 group relative"
@@ -226,14 +235,6 @@ export default function Navbar() {
                       <span>{translations.settings[language]}</span>
                     </Link>
                   </div>
-
-                  {/* Mobile Menu Button */}
-                  <button
-                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    className="md:hidden flex items-center gap-2 text-gray-600 hover:text-gray-900"
-                  >
-                    <FaBars className="w-6 h-6" />
-                  </button>
 
                   {/* Mobile Menu Dropdown */}
                   {isMobileMenuOpen && (
@@ -298,7 +299,7 @@ export default function Navbar() {
                   )}
                 </>
               )}
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-row-reverse md:flex-row ">
                 <span className="text-gray-700 text-[12px] text-center">
                   {translations.greeting[language]}, {restaurant ? restaurant.name : (user?.name || user?.email?.split('@')[0] || 'User')}
                 </span>
@@ -307,7 +308,7 @@ export default function Navbar() {
                   className="flex items-center gap-2 bg-[#222] text-white px-2 py-1.5 md:px-4 md:py-2 rounded hover:bg-[#000] transition text-[10px] md:text-base"
                 >
                   <FiLogOut />
-                  {translations.logout[language]}
+                  <span className="hidden md:inline">{translations.logout[language]}</span>
                 </button>
               </div>
             </>

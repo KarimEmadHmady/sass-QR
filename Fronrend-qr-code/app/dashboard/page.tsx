@@ -162,11 +162,6 @@ export default function RestaurantDashboard() {
   // Memoized functions to prevent unnecessary re-renders
   const fetchData = useCallback(async () => {
     try {
-      // Check if user is authenticated
-      if (!isAuthenticated || !token) {
-        router.push('/restaurant-login');
-        return;
-      }
 
       // Fetch restaurant profile to get trial information
       const restaurantRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/profile`, {
@@ -176,11 +171,7 @@ export default function RestaurantDashboard() {
       });
   
       if (!restaurantRes.ok) {
-        if (restaurantRes.status === 401) {
-          // Token is invalid, redirect to login
-          router.push('/restaurant-login');
-          return;
-        }
+
         // For other errors, show error but don't redirect
         console.error(`Failed to fetch restaurant profile: ${restaurantRes.status}`);
         setStats({
