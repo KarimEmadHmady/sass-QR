@@ -158,7 +158,7 @@ const translations = {
         {
           icon: <FaChartLine className="w-8 h-8" />,
           title: "تحليلات مباشرة",
-          description: "تعرف على على أكثر الأطباق شعبية"
+          description: "تعرف  على أكثر الأطباق طلبا"
         },
         {
           icon: <FaUsers className="w-8 h-8" />,
@@ -250,12 +250,12 @@ const translations = {
         },
         {
           name: "الباقة السنوية",
-          price: "4999",
+          price: "3499",
           duration: "سنوياً",
           features: [
             "كل مميزات الباقة الشهرية",
             "أولوية في الدعم الفني",
-            "توفير رسوم شهرين",
+            "توفير رسوم 3 اشهر",
             "خصم الالتزام طويل الأمد"
           ],
           cta: "ابدأ الآن"
