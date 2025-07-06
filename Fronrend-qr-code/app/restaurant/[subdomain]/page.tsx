@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/store';
 import { useLanguage } from '@/store';
@@ -231,6 +231,7 @@ export default function RestaurantPage() {
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [showQR, setShowQR] = useState(false);
   const [showSubscriptionWarning, setShowSubscriptionWarning] = useState(false);
+  const [isTrialExpired, setIsTrialExpired] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -284,6 +285,7 @@ export default function RestaurantPage() {
         // Check subscription status
         if (updatedRestaurant.subscription?.status === 'expired') {
           setShowSubscriptionWarning(true);
+          setIsTrialExpired(true);
         }
         
         // Update the auth context with new restaurant data
@@ -580,7 +582,7 @@ export default function RestaurantPage() {
     }
   };
 
-  const getRemainingTrialTime = () => {
+  const getRemainingTrialTime = useMemo(() => {
     
     if (!authRestaurant?.subscription) {
       return null;
@@ -608,18 +610,34 @@ export default function RestaurantPage() {
     const diff = trialEnd.getTime() - now.getTime();
 
     if (diff <= 0) {
+      setIsTrialExpired(true);
+      setShowSubscriptionWarning(true);
       return null;
     }
+
+    setIsTrialExpired(false);
+    setShowSubscriptionWarning(false);
 
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
     return { days, hours, minutes };
-  };
+  }, [authRestaurant?.subscription?.trialEndsAt]);
 
   // Calculate remaining time once
-  const remainingTime = getRemainingTrialTime();
+  const remainingTime = getRemainingTrialTime;
+
+  // Update trial expired status when remaining time changes
+  useEffect(() => {
+    if (!remainingTime) {
+      setIsTrialExpired(true);
+      setShowSubscriptionWarning(true);
+    } else {
+      setIsTrialExpired(false);
+      setShowSubscriptionWarning(false);
+    }
+  }, [remainingTime]);
 
   if (loading) {
     return (
@@ -683,12 +701,20 @@ export default function RestaurantPage() {
               </div>
               <div>
                 <p className="font-bold">
-                  {language === 'ar' ? 'انتهت الفترة التجريبية' : 'Trial Period Expired'}
+                  {isTrialExpired 
+                    ? (language === 'ar' ? 'انتهت الفترة التجريبية' : 'Trial Period Expired')
+                    : (language === 'ar' ? 'تحذير: فترة التجربة تنتهي قريباً' : 'Warning: Trial period ending soon')
+                  }
                 </p>
                 <p className="text-sm">
-                  {language === 'ar' 
-                    ? 'يرجى الاشتراك للاستمرار في استخدام الخدمة' 
-                    : 'Please subscribe to continue using the service'}
+                  {isTrialExpired 
+                    ? (language === 'ar' 
+                        ? 'لا يمكنك إضافة أو تعديل المحتوى. يرجى الاشتراك للاستمرار في استخدام الخدمة' 
+                        : 'You cannot add or edit content. Please subscribe to continue using the service')
+                    : (language === 'ar' 
+                        ? 'يرجى الاشتراك للاستمرار في استخدام الخدمة' 
+                        : 'Please subscribe to continue using the service')
+                  }
                 </p>
               </div>
             </div>
@@ -787,7 +813,7 @@ export default function RestaurantPage() {
         <div className="bg-white rounded-lg shadow-md p-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold">{t.aboutUs}</h2>
-            {token && (
+            {token && !isTrialExpired && (
               <button
                 onClick={handleEdit}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"

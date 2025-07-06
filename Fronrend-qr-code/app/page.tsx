@@ -78,6 +78,7 @@ const HomePage: React.FC = () => {
   const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(null);
   const [hasSubdomain, setHasSubdomain] = useState<boolean>(false);
   const [isCheckingSubdomain, setIsCheckingSubdomain] = useState(true);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   // Add custom styles for hiding scrollbar
   const scrollableStyle = {
@@ -474,16 +475,16 @@ const HomePage: React.FC = () => {
       <div className="container mx-auto max-w-6xl px-4">
         {/* Categories - Fixed on Scroll */}
         <div className="sticky top-0 z-50 bg-[#eee] p-4">
-          <div className="flex items-center">
-            {/* Hamburger Menu Button */}
+          <div className="flex items-center gap-3">
+            {/* Hamburger Menu Button - Fixed on right */}
             <button 
               onClick={() => setIsSidebarOpen(true)}
-              className="p-2 hover:bg-gray-200 rounded-lg mr-2 cursor-pointer"
+              className="p-2 hover:bg-gray-200 rounded-lg cursor-pointer flex-shrink-0"
             >
               <Menu className="w-6 h-6" />
             </button>
             
-            {/* Scrollable Categories */}
+            {/* Scrollable Categories - Takes remaining space */}
             <div className="overflow-x-auto flex-1" style={scrollableStyle}>
               <div className="flex gap-[4px] min-w-max">
                 {categoryNames.map((categoryId) => (
@@ -504,6 +505,30 @@ const HomePage: React.FC = () => {
                 ))}
               </div>
             </div>
+
+            {/* View Mode Toggle Button - Fixed on left */}
+            <button 
+              onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
+              className="p-2 hover:bg-gray-200 rounded-lg cursor-pointer bg-white shadow-sm flex-shrink-0"
+              title={language === 'ar' ? 'تغيير شكل العرض' : 'Toggle view mode'}
+            >
+              {viewMode === 'list' ? (
+                // Grid icon (4 squares)
+                <div className="w-5 h-5 flex flex-wrap gap-0.5">
+                  <div className="w-2 h-2 bg-gray-600 rounded-sm"></div>
+                  <div className="w-2 h-2 bg-gray-600 rounded-sm"></div>
+                  <div className="w-2 h-2 bg-gray-600 rounded-sm"></div>
+                  <div className="w-2 h-2 bg-gray-600 rounded-sm"></div>
+                </div>
+              ) : (
+                // List icon (3 lines)
+                <div className="w-5 h-5 flex flex-col gap-0.5 justify-center">
+                  <div className="w-full h-0.5 bg-gray-600 rounded-sm"></div>
+                  <div className="w-full h-0.5 bg-gray-600 rounded-sm"></div>
+                  <div className="w-full h-0.5 bg-gray-600 rounded-sm"></div>
+                </div>
+              )}
+            </button>
           </div>
         </div>
 
@@ -611,7 +636,7 @@ const HomePage: React.FC = () => {
                         </h2>
                         <div className="h-[1px] flex-grow bg-gray-200"></div>
                       </div>
-                      <div className="grid grid-cols-1 gap-4" dir="ltr">
+                      <div className={`${viewMode === 'list' ? 'grid grid-cols-1' : 'grid grid-cols-2'} gap-4`} dir="ltr">
                         {categoryMeals.map((meal, index) => {
                           const isVeryFirstMeal = categoryIndex === 0 && index === 0 && !isFirstMealShown;
                           if (isVeryFirstMeal) {
@@ -641,38 +666,121 @@ const HomePage: React.FC = () => {
                                   </span>
                                 </div>
                               )}
-                              <div className="flex">
-                                <div className="w-1/3 relative overflow-hidden h-full">
-                                  <Image
-                                    src={meal.image || "/placeholder.svg"}
-                                    alt={language === 'ar' ? meal.name?.ar || '' : meal.name?.en || ''}
-                                    className="h-[110px] w-[110px] object-cover object-center group-hover:scale-105 transition-transform duration-500 p-[12px] rounded-[15px]"
-                                    width={200}
-                                    height={200}
-                                  />
-                                  {meal.isNew && (
-                                    <div className="absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                                      {language === 'ar' ? "جديد" : "New"}
-                                    </div>
-                                  )}
-                                </div>
+                              
+                              {viewMode === 'list' ? (
+                                // List view - horizontal layout
+                                <div className="flex">
+                                  <div className="w-1/3 relative overflow-hidden h-full">
+                                    <Image
+                                      src={meal.image || "/placeholder.svg"}
+                                      alt={language === 'ar' ? meal.name?.ar || '' : meal.name?.en || ''}
+                                      className="h-[110px] w-[110px] object-cover object-center group-hover:scale-105 transition-transform duration-500 p-[12px] rounded-[15px]"
+                                      width={200}
+                                      height={200}
+                                    />
+                                    {meal.isNew && (
+                                      <div className="absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                        {language === 'ar' ? "جديد" : "New"}
+                                      </div>
+                                    )}
+                                  </div>
 
-                                <div className="w-2/3 p-3 flex flex-col justify-between">
-                                  <div>
-                                    <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="mb-1">
-                                      <h2 className="text-[12px] font-bold text-gray-800 mb-1">
+                                  <div className="w-2/3 p-3 flex flex-col justify-between">
+                                    <div>
+                                      <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="mb-1">
+                                        <h2 className="text-[12px] font-bold text-gray-800 mb-1">
+                                          {language === 'ar' ? meal.name?.ar || '' : meal.name?.en || ''}
+                                        </h2>
+                                        <p className="text-gray-600 text-xs line-clamp-2 mb-[7px]">
+                                          {language === 'ar' ? meal.description?.ar || '' : meal.description?.en || ''}
+                                        </p>
+                                      </div>
+
+                                      {/* Price moved here - directly under description */}
+                                      <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="text-[12px] font-bold text-primary mb-1">
+                                        {meal.isDiscountActive && meal.discountedPrice ? (
+                                          <div className="flex items-center gap-1">
+                                            <span className="line-through text-gray-400">
+                                              {meal.price} EGP
+                                            </span>
+                                            <span>
+                                              {meal.discountedPrice} EGP
+                                            </span>
+                                          </div>
+                                        ) : (
+                                          `${meal.price} EGP`
+                                        )}
+                                      </div>
+
+                                      {meal.preparationTime && (
+                                        <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="flex items-center text-gray-500 text-xs mb-1">
+                                          <Clock className="w-3 h-3 mx-1" />
+                                          <span>
+                                            {language === 'ar' 
+                                              ? `${meal.preparationTime} دقيقة`
+                                              : `${meal.preparationTime} minutes`
+                                            }
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <div className={`flex ${language === 'ar' ? 'justify-end' : 'justify-start'} items-end`}>
+                                      <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="flex items-center gap-2">
+                                        {meal.reviews && meal.reviews.length > 0 ? (
+                                          <>
+                                            <span className="text-[10px] text-gray-500">
+                                              ({meal.reviews.length})
+                                            </span>
+                                            {renderStars(
+                                              meal.reviews.reduce(
+                                                (sum, review) => sum + review.rating,
+                                                0
+                                              ) / meal.reviews.length,
+                                              language
+                                            )}
+                                          </>
+                                        ) : (
+                                          <span className="text-[10px] text-gray-500">
+                                            {language === 'ar' ? "لا توجد تقييمات" : "No reviews"}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                // Grid view - vertical layout
+                                <div className="flex flex-col">
+                                  <div className="relative overflow-hidden">
+                                    <Image
+                                      src={meal.image || "/placeholder.svg"}
+                                      alt={language === 'ar' ? meal.name?.ar || '' : meal.name?.en || ''}
+                                      className="w-full h-[120px] object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                                      width={200}
+                                      height={200}
+                                    />
+                                    {meal.isNew && (
+                                      <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                        {language === 'ar' ? "جديد" : "New"}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="p-3">
+                                    <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="mb-2">
+                                      <h2 className="text-[14px] font-bold text-gray-800 mb-1">
                                         {language === 'ar' ? meal.name?.ar || '' : meal.name?.en || ''}
                                       </h2>
-                                      <p className="text-gray-600 text-xs line-clamp-2 mb-[7px]">
+                                      <p className="text-gray-600 text-xs line-clamp-2 mb-2">
                                         {language === 'ar' ? meal.description?.ar || '' : meal.description?.en || ''}
                                       </p>
                                     </div>
 
-                                    {/* Price moved here - directly under description */}
-                                    <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="text-[12px] font-bold text-primary mb-1">
+                                    <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="text-[14px] font-bold text-primary mb-2">
                                       {meal.isDiscountActive && meal.discountedPrice ? (
                                         <div className="flex items-center gap-1">
-                                          <span className="line-through text-gray-400">
+                                          <span className="line-through text-gray-400 text-xs">
                                             {meal.price} EGP
                                           </span>
                                           <span>
@@ -685,7 +793,7 @@ const HomePage: React.FC = () => {
                                     </div>
 
                                     {meal.preparationTime && (
-                                      <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="flex items-center text-gray-500 text-xs mb-1">
+                                      <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="flex items-center text-gray-500 text-xs mb-2">
                                         <Clock className="w-3 h-3 mx-1" />
                                         <span>
                                           {language === 'ar' 
@@ -695,32 +803,32 @@ const HomePage: React.FC = () => {
                                         </span>
                                       </div>
                                     )}
-                                  </div>
 
-                                  <div className={`flex ${language === 'ar' ? 'justify-end' : 'justify-start'} items-end`}>
-                                    <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="flex items-center gap-2">
-                                      {meal.reviews && meal.reviews.length > 0 ? (
-                                        <>
+                                    <div className={`flex ${language === 'ar' ? 'justify-end' : 'justify-start'} items-center`}>
+                                      <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="flex items-center gap-1">
+                                        {meal.reviews && meal.reviews.length > 0 ? (
+                                          <>
+                                            <span className="text-[10px] text-gray-500">
+                                              ({meal.reviews.length})
+                                            </span>
+                                            {renderStars(
+                                              meal.reviews.reduce(
+                                                (sum, review) => sum + review.rating,
+                                                0
+                                              ) / meal.reviews.length,
+                                              language
+                                            )}
+                                          </>
+                                        ) : (
                                           <span className="text-[10px] text-gray-500">
-                                            ({meal.reviews.length})
+                                            {language === 'ar' ? "لا توجد تقييمات" : "No reviews"}
                                           </span>
-                                          {renderStars(
-                                            meal.reviews.reduce(
-                                              (sum, review) => sum + review.rating,
-                                              0
-                                            ) / meal.reviews.length,
-                                            language
-                                          )}
-                                        </>
-                                      ) : (
-                                        <span className="text-[10px] text-gray-500">
-                                          {language === 'ar' ? "لا توجد تقييمات" : "No reviews"}
-                                        </span>
-                                      )}
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
-                              </div>
+                              )}
                             </div>
                           );
                         })}
@@ -730,7 +838,7 @@ const HomePage: React.FC = () => {
                 })
               ) : (
                 // Show meals for selected category only
-                <div className="grid grid-cols-1 gap-4" dir="ltr">
+                <div className={`${viewMode === 'list' ? 'grid grid-cols-1' : 'grid grid-cols-2'} gap-4`} dir="ltr">
                   {filteredMeals.map((meal, index) => {
                     const isVeryFirstMeal = index === 0 && !isFirstMealShown;
                     if (isVeryFirstMeal) {
@@ -760,36 +868,119 @@ const HomePage: React.FC = () => {
                             </span>
                           </div>
                         )}
-                        <div className="flex">
-                          <div className="w-1/3 relative overflow-hidden h-full">
-                            <Image
-                              src={meal.image || "/placeholder.svg"}
-                              alt={language === 'ar' ? meal.name?.ar || '' : meal.name?.en || ''}
-                              className="h-[110px] w-[110px] object-cover object-center group-hover:scale-105 transition-transform duration-500 p-[12px] rounded-[15px]"
-                              width={200}
-                              height={200}
-                            />
-                            {meal.isNew && (
-                              <div className="absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                                {language === 'ar' ? "جديد" : "New"}
-                              </div>
-                            )}
-                          </div>
+                        
+                        {viewMode === 'list' ? (
+                          // List view - horizontal layout
+                          <div className="flex">
+                            <div className="w-1/3 relative overflow-hidden h-full">
+                              <Image
+                                src={meal.image || "/placeholder.svg"}
+                                alt={language === 'ar' ? meal.name?.ar || '' : meal.name?.en || ''}
+                                className="h-[110px] w-[110px] object-cover object-center group-hover:scale-105 transition-transform duration-500 p-[12px] rounded-[15px]"
+                                width={200}
+                                height={200}
+                              />
+                              {meal.isNew && (
+                                <div className="absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                  {language === 'ar' ? "جديد" : "New"}
+                                </div>
+                              )}
+                            </div>
 
-                          <div className="w-2/3 p-3 flex flex-col justify-between">
-                            <div>
-                              <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="mb-1">
-                                <h2 className="text-[12px] font-bold text-gray-800 mb-1">
+                            <div className="w-2/3 p-3 flex flex-col justify-between">
+                              <div>
+                                <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="mb-1">
+                                  <h2 className="text-[12px] font-bold text-gray-800 mb-1">
+                                    {language === 'ar' ? meal.name?.ar || '' : meal.name?.en || ''}
+                                  </h2>
+                                  <p className="text-gray-600 text-xs line-clamp-2 mb-[7px]">
+                                    {language === 'ar' ? meal.description?.ar || '' : meal.description?.en || ''}
+                                  </p>
+                                </div>
+                                <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="text-[12px] font-bold text-primary mb-1">
+                                  {meal.isDiscountActive && meal.discountedPrice ? (
+                                    <div className="flex items-center gap-1">
+                                      <span className="line-through text-gray-400">
+                                        {meal.price} EGP
+                                      </span>
+                                      <span>
+                                        {meal.discountedPrice} EGP
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    `${meal.price} EGP`
+                                  )}
+                                </div>
+
+                                {meal.preparationTime && (
+                                  <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="flex items-center text-gray-500 text-xs mb-1">
+                                    <Clock className="w-3 h-3 mx-1" />
+                                    <span>
+                                      {language === 'ar' 
+                                        ? `${meal.preparationTime} دقيقة`
+                                        : `${meal.preparationTime} minutes`
+                                      }
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className={`flex ${language === 'ar' ? 'justify-end' : 'justify-start'} items-end`}>
+                                <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="flex items-center gap-2">
+                                  {meal.reviews && meal.reviews.length > 0 ? (
+                                    <>
+                                      <span className="text-[10px] text-gray-500">
+                                        ({meal.reviews.length})
+                                      </span>
+                                      {renderStars(
+                                        meal.reviews.reduce(
+                                          (sum, review) => sum + review.rating,
+                                          0
+                                        ) / meal.reviews.length,
+                                        language
+                                      )}
+                                    </>
+                                  ) : (
+                                    <span className="text-[10px] text-gray-500">
+                                      {language === 'ar' ? "لا توجد تقييمات" : "No reviews"}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          // Grid view - vertical layout
+                          <div className="flex flex-col">
+                            <div className="relative overflow-hidden">
+                              <Image
+                                src={meal.image || "/placeholder.svg"}
+                                alt={language === 'ar' ? meal.name?.ar || '' : meal.name?.en || ''}
+                                className="w-full h-[120px] object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                                width={200}
+                                height={200}
+                              />
+                              {meal.isNew && (
+                                <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                  {language === 'ar' ? "جديد" : "New"}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="p-3">
+                              <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="mb-2">
+                                <h2 className="text-[14px] font-bold text-gray-800 mb-1">
                                   {language === 'ar' ? meal.name?.ar || '' : meal.name?.en || ''}
                                 </h2>
-                                <p className="text-gray-600 text-xs line-clamp-2 mb-[7px]">
+                                <p className="text-gray-600 text-xs line-clamp-2 mb-2">
                                   {language === 'ar' ? meal.description?.ar || '' : meal.description?.en || ''}
                                 </p>
                               </div>
-                              <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="text-[12px] font-bold text-primary mb-1">
+
+                              <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="text-[14px] font-bold text-primary mb-2">
                                 {meal.isDiscountActive && meal.discountedPrice ? (
                                   <div className="flex items-center gap-1">
-                                    <span className="line-through text-gray-400">
+                                    <span className="line-through text-gray-400 text-xs">
                                       {meal.price} EGP
                                     </span>
                                     <span>
@@ -802,7 +993,7 @@ const HomePage: React.FC = () => {
                               </div>
 
                               {meal.preparationTime && (
-                                <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="flex items-center text-gray-500 text-xs mb-1">
+                                <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="flex items-center text-gray-500 text-xs mb-2">
                                   <Clock className="w-3 h-3 mx-1" />
                                   <span>
                                     {language === 'ar' 
@@ -812,32 +1003,32 @@ const HomePage: React.FC = () => {
                                   </span>
                                 </div>
                               )}
-                            </div>
 
-                            <div className={`flex ${language === 'ar' ? 'justify-end' : 'justify-start'} items-end`}>
-                              <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="flex items-center gap-2">
-                                {meal.reviews && meal.reviews.length > 0 ? (
-                                  <>
+                              <div className={`flex ${language === 'ar' ? 'justify-end' : 'justify-start'} items-center`}>
+                                <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="flex items-center gap-1">
+                                  {meal.reviews && meal.reviews.length > 0 ? (
+                                    <>
+                                      <span className="text-[10px] text-gray-500">
+                                        ({meal.reviews.length})
+                                      </span>
+                                      {renderStars(
+                                        meal.reviews.reduce(
+                                          (sum, review) => sum + review.rating,
+                                          0
+                                        ) / meal.reviews.length,
+                                        language
+                                      )}
+                                    </>
+                                  ) : (
                                     <span className="text-[10px] text-gray-500">
-                                      ({meal.reviews.length})
+                                      {language === 'ar' ? "لا توجد تقييمات" : "No reviews"}
                                     </span>
-                                    {renderStars(
-                                      meal.reviews.reduce(
-                                        (sum, review) => sum + review.rating,
-                                        0
-                                      ) / meal.reviews.length,
-                                      language
-                                    )}
-                                  </>
-                                ) : (
-                                  <span className="text-[10px] text-gray-500">
-                                    {language === 'ar' ? "لا توجد تقييمات" : "No reviews"}
-                                  </span>
-                                )}
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     );
                   })}

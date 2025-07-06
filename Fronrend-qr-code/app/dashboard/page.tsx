@@ -70,6 +70,7 @@ export default function RestaurantDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [showSubscriptionWarning, setShowSubscriptionWarning] = useState(false);
+  const [isTrialExpired, setIsTrialExpired] = useState(false);
 
   // Memoized translations to prevent unnecessary recalculations
   const translations = useMemo(() => ({
@@ -198,9 +199,13 @@ export default function RestaurantDashboard() {
       const remainingHours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const trialDaysLeft = remainingDays + (remainingHours > 0 ? 1 : 0);
 
-      // Check subscription status
-      if (restaurantData.subscription.status === 'expired') {
+      // Check if trial is expired (0 or negative days)
+      if (trialDaysLeft <= 0) {
+        setIsTrialExpired(true);
         setShowSubscriptionWarning(true);
+      } else {
+        setIsTrialExpired(false);
+        setShowSubscriptionWarning(false);
       }
   
       // Fetch meals and categories in parallel
@@ -370,12 +375,20 @@ export default function RestaurantDashboard() {
               </div>
               <div>
                 <p className="font-bold">
-                  {language === 'ar' ? 'انتهت الفترة التجريبية' : 'Trial Period Expired'}
+                  {isTrialExpired 
+                    ? (language === 'ar' ? 'انتهت الفترة التجريبية' : 'Trial Period Expired')
+                    : (language === 'ar' ? 'تحذير: فترة التجربة تنتهي قريباً' : 'Warning: Trial period ending soon')
+                  }
                 </p>
                 <p className="text-sm">
-                  {language === 'ar' 
-                    ? 'يرجى الاشتراك للاستمرار في استخدام الخدمة' 
-                    : 'Please subscribe to continue using the service'}
+                  {isTrialExpired 
+                    ? (language === 'ar' 
+                        ? 'لا يمكنك إضافة أو تعديل المحتوى. يرجى الاشتراك للاستمرار في استخدام الخدمة' 
+                        : 'You cannot add or edit content. Please subscribe to continue using the service')
+                    : (language === 'ar' 
+                        ? 'يرجى الاشتراك للاستمرار في استخدام الخدمة' 
+                        : 'Please subscribe to continue using the service')
+                  }
                 </p>
               </div>
             </div>
@@ -463,7 +476,12 @@ export default function RestaurantDashboard() {
               </div>
               <div>
                 <h3 className="text-gray-500 text-sm">{translations.trialDaysLeft[language]}</h3>
-                <p className="text-2xl font-bold">{stats.trialDaysLeft}</p>
+                <p className="text-2xl font-bold">
+                  {stats.trialDaysLeft <= 0 
+                    ? (language === 'ar' ? 'منتهى' : 'Expired')
+                    : stats.trialDaysLeft
+                  }
+                </p>
               </div>
             </div>
             {stats.subscriptionStatus === 'trial' && (
@@ -493,34 +511,62 @@ export default function RestaurantDashboard() {
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h2 className="text-[15px] sm:text-2xl font-bold mb-6">{translations.quickActions[language]}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Link
-              href="/dashboard/meals"
-              className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-            >
-              <FaUtensils className="text-green-600 text-xl" />
-              <span>{translations.manageMeals[language]}</span>
-            </Link>
-            <Link
-              href="/dashboard/categories"
-              className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-            >
-              <FaTags className="text-purple-600 text-xl" />
-              <span>{translations.manageCategories[language]}</span>
-            </Link>
-            <Link
-              href="/dashboard/discounts"
-              className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-            >
-              <FaMoneyBill className="text-orange-600 text-xl" />
-              <span>{language === 'ar' ? 'إدارة الخصومات' : 'Manage Discounts'}</span>
-            </Link>
-            <Link
-              href="/dashboard/qr"
-              className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-            >
-              <FaQrcode className="text-indigo-600 text-xl" />
-              <span>{translations.viewQR[language]}</span>
-            </Link>
+            {isTrialExpired ? (
+              // Show disabled actions when trial is expired
+              <>
+                <div className="flex items-center gap-3 p-4 bg-gray-100 rounded-lg opacity-50 cursor-not-allowed">
+                  <FaUtensils className="text-gray-400 text-xl" />
+                  <span className="text-gray-500">{translations.manageMeals[language]}</span>
+                </div>
+                <div className="flex items-center gap-3 p-4 bg-gray-100 rounded-lg opacity-50 cursor-not-allowed">
+                  <FaTags className="text-gray-400 text-xl" />
+                  <span className="text-gray-500">{translations.manageCategories[language]}</span>
+                </div>
+                <div className="flex items-center gap-3 p-4 bg-gray-100 rounded-lg opacity-50 cursor-not-allowed">
+                  <FaMoneyBill className="text-gray-400 text-xl" />
+                  <span className="text-gray-500">{language === 'ar' ? 'إدارة الخصومات' : 'Manage Discounts'}</span>
+                </div>
+                <Link
+                  href="/dashboard/qr"
+                  className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                >
+                  <FaQrcode className="text-indigo-600 text-xl" />
+                  <span>{translations.viewQR[language]}</span>
+                </Link>
+              </>
+            ) : (
+              // Show normal actions when trial is active
+              <>
+                <Link
+                  href="/dashboard/meals"
+                  className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                >
+                  <FaUtensils className="text-green-600 text-xl" />
+                  <span>{translations.manageMeals[language]}</span>
+                </Link>
+                <Link
+                  href="/dashboard/categories"
+                  className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                >
+                  <FaTags className="text-purple-600 text-xl" />
+                  <span>{translations.manageCategories[language]}</span>
+                </Link>
+                <Link
+                  href="/dashboard/discounts"
+                  className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                >
+                  <FaMoneyBill className="text-orange-600 text-xl" />
+                  <span>{language === 'ar' ? 'إدارة الخصومات' : 'Manage Discounts'}</span>
+                </Link>
+                <Link
+                  href="/dashboard/qr"
+                  className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                >
+                  <FaQrcode className="text-indigo-600 text-xl" />
+                  <span>{translations.viewQR[language]}</span>
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
@@ -528,12 +574,14 @@ export default function RestaurantDashboard() {
         <div className="bg-white rounded-xl shadow-lg p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-[14px] sm:text-2xl font-bold">{translations.recentMeals[language]}</h2>
-            <Link
-              href="/dashboard/meals/add"
-              className="bg-[#222] text-[14px] sm:text-1xl text-white px-4 py-2 rounded-lg hover:bg-[#333] transition"
-            >
-              {translations.addNewMeal[language]}
-            </Link>
+            {!isTrialExpired && (
+              <Link
+                href="/dashboard/meals/add"
+                className="bg-[#222] text-[14px] sm:text-1xl text-white px-4 py-2 rounded-lg hover:bg-[#333] transition"
+              >
+                {translations.addNewMeal[language]}
+              </Link>
+            )}
           </div>
           
           {meals.length === 0 ? (
@@ -544,17 +592,24 @@ export default function RestaurantDashboard() {
               <h3 className="text-xl font-semibold text-gray-600 mb-2">
                 {language === 'ar' ? 'لا توجد وجبات بعد' : 'No meals yet'}
               </h3>
-              <p className="text-gray-500 mb-6">
-                {language === 'ar' 
-                  ? 'ابدأ بإضافة وجبتك الأولى لعرضها هنا' 
-                  : 'Start by adding your first meal to display it here'}
+              <p className="text-gray-600 mb-6">
+                {isTrialExpired 
+                  ? (language === 'ar' 
+                      ? 'انتهت فترة التجربة. يرجى الاشتراك لإضافة وجبات جديدة' 
+                      : 'Trial period expired. Please subscribe to add new meals')
+                  : (language === 'ar' 
+                      ? 'ابدأ بإضافة وجبتك الأولى لعرضها هنا' 
+                      : 'Start by adding your first meal to display it here')
+                }
               </p>
-              <Link
-                href="/dashboard/meals/add"
-                className="bg-[#222] text-white px-6 py-3 rounded-lg hover:bg-[#333] transition inline-block"
-              >
-                {translations.addNewMeal[language]}
-              </Link>
+              {!isTrialExpired && (
+                <Link
+                  href="/dashboard/meals/add"
+                  className="bg-[#222] text-white px-6 py-3 rounded-lg hover:bg-[#333] transition inline-block"
+                >
+                  {translations.addNewMeal[language]}
+                </Link>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -593,20 +648,22 @@ export default function RestaurantDashboard() {
                           language === 'ar' ? `${meal.price} جنيه` : `${meal.price} EGP`
                         )}
                       </span>
-                      <div className="flex gap-2">
-                        <Link
-                          href={`/dashboard/meals/edit/${meal._id}`}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          <FaEdit className="text-xl" />
-                        </Link>
-                        <button
-                          onClick={() => deleteMeal(meal._id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <FaTrash className="text-xl" />
-                        </button>
-                      </div>
+                      {!isTrialExpired && (
+                        <div className="flex gap-2">
+                          <Link
+                            href={`/dashboard/meals/edit/${meal._id}`}
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            <FaEdit className="text-xl" />
+                          </Link>
+                          <button
+                            onClick={() => deleteMeal(meal._id)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <FaTrash className="text-xl" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

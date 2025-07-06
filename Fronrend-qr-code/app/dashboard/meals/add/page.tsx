@@ -90,6 +90,7 @@ const AddMealPage = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [isTrialExpired, setIsTrialExpired] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -99,6 +100,30 @@ const AddMealPage = () => {
     }
     fetchCategories();
   }, [restaurant, router]);
+
+  // Check trial expiration
+  useEffect(() => {
+    if (restaurant?.subscription) {
+      const now = new Date();
+      let trialEnd: Date;
+
+      if (typeof restaurant.subscription.trialEndsAt === 'string') {
+        trialEnd = new Date(restaurant.subscription.trialEndsAt);
+      } else {
+        const mongoDate = restaurant.subscription.trialEndsAt as { $date?: { $numberLong: string } };
+        if (mongoDate.$date?.$numberLong) {
+          trialEnd = new Date(parseInt(mongoDate.$date.$numberLong));
+        } else {
+          return;
+        }
+      }
+
+      const diff = trialEnd.getTime() - now.getTime();
+      if (diff <= 0) {
+        setIsTrialExpired(true);
+      }
+    }
+  }, [restaurant]);
 
   const fetchCategories = async () => {
     try {
@@ -185,6 +210,12 @@ const AddMealPage = () => {
 
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isTrialExpired) {
+      toast.error(language === 'ar' ? 'انتهت الفترة التجريبية. لا يمكن إضافة فئات جديدة.' : 'Trial period expired. Cannot add new categories.');
+      return;
+    }
+    
     if (!restaurant) {
       toast.error(language === 'ar' ? 'يجب تسجيل الدخول أولاً' : 'You need to login first');
       return;
@@ -235,6 +266,12 @@ const AddMealPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isTrialExpired) {
+      toast.error(language === 'ar' ? 'انتهت الفترة التجريبية. لا يمكن إضافة وجبات جديدة.' : 'Trial period expired. Cannot add new meals.');
+      return;
+    }
+    
     if (!restaurant) {
       toast.error(language === 'ar' ? 'يجب تسجيل الدخول أولاً' : 'You need to login first');
       return;
@@ -298,6 +335,29 @@ const AddMealPage = () => {
     <div className="min-h-screen bg-[#eee] flex flex-col items-center py-8 px-4">
       <AnimatedBackground />
       
+      {/* Trial Expired Warning */}
+      {isTrialExpired && (
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6 w-full max-w-md" role="alert">
+          <div className="flex items-center">
+            <div className="py-1">
+              <svg className="h-6 w-6 text-red-500 mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-bold">
+                {language === 'ar' ? 'انتهت الفترة التجريبية' : 'Trial Period Expired'}
+              </p>
+              <p className="text-sm">
+                {language === 'ar' 
+                  ? 'لا يمكنك إضافة وجبات أو فئات جديدة. يرجى الاشتراك للاستمرار في استخدام الخدمة' 
+                  : 'You cannot add new meals or categories. Please subscribe to continue using the service'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Language Switch */}
       <div className="w-full max-w-md mb-4 flex justify-end">
         <button
@@ -313,7 +373,7 @@ const AddMealPage = () => {
         onSubmit={handleSubmit}
         className={`bg-white p-8 sm:p-10 rounded-2xl shadow-lg w-full max-w-md transition-all z-10 mb-8 ${
           language === 'ar' ? 'rtl' : 'ltr'
-        }`}
+        } ${isTrialExpired ? 'opacity-50 pointer-events-none' : ''}`}
         dir={language === 'ar' ? 'rtl' : 'ltr'}
       >
         <h2 className="text-3xl font-extrabold text-center text-gray-800 mb-6">
@@ -510,9 +570,9 @@ const AddMealPage = () => {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || isTrialExpired}
           className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-            loading ? "opacity-50 cursor-not-allowed" : ""
+            loading || isTrialExpired ? "opacity-50 cursor-not-allowed" : ""
           }`}
         >
           {loading 
@@ -526,7 +586,7 @@ const AddMealPage = () => {
         onSubmit={handleAddCategory}
         className={`bg-white p-8 sm:p-10 rounded-2xl shadow-lg w-full max-w-md transition-all z-10 mt-8 ${
           language === 'ar' ? 'rtl' : 'ltr'
-        }`}
+        } ${isTrialExpired ? 'opacity-50 pointer-events-none' : ''}`}
         dir={language === 'ar' ? 'rtl' : 'ltr'}
       >
         <h2 className="text-3xl font-extrabold text-center text-gray-800 mb-6">
@@ -620,7 +680,10 @@ const AddMealPage = () => {
 
         <button
           type="submit"
-          className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+          disabled={isTrialExpired}
+          className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${
+            isTrialExpired ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
         >
           {language === 'ar' ? 'إضافة الفئة' : 'Add Category'}
         </button>

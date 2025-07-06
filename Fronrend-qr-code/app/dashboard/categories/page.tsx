@@ -7,6 +7,7 @@ import Image from "next/image";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import useSWR from 'swr';
 import { showApiErrorToast } from '@/utils/apiError';
+import { useAuth } from "@/store";
 
 const EditIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -79,6 +80,7 @@ const fetcher = async (url: string) => {
 };
 
 const CategoriesPage = () => {
+  const { restaurant, token } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -90,8 +92,8 @@ const CategoriesPage = () => {
     image: null,
     imagePreview: "",
   });
+  const [isTrialExpired, setIsTrialExpired] = useState(false);
   
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const { data: categoriesData = [], error, isLoading, mutate } = useSWR(
     token ? `${process.env.NEXT_PUBLIC_API_URL}/categories` : null, 
     fetcher
@@ -101,6 +103,30 @@ const CategoriesPage = () => {
     token ? `${process.env.NEXT_PUBLIC_API_URL}/meals` : null, 
     fetcher
   );
+
+  // Check trial expiration
+  useEffect(() => {
+    if (restaurant?.subscription) {
+      const now = new Date();
+      let trialEnd: Date;
+
+      if (typeof restaurant.subscription.trialEndsAt === 'string') {
+        trialEnd = new Date(restaurant.subscription.trialEndsAt);
+      } else {
+        const mongoDate = restaurant.subscription.trialEndsAt as { $date?: { $numberLong: string } };
+        if (mongoDate.$date?.$numberLong) {
+          trialEnd = new Date(parseInt(mongoDate.$date.$numberLong));
+        } else {
+          return;
+        }
+      }
+
+      const diff = trialEnd.getTime() - now.getTime();
+      if (diff <= 0) {
+        setIsTrialExpired(true);
+      }
+    }
+  }, [restaurant]);
 
   // Update categories when SWR data changes and calculate meal counts
   useEffect(() => {
@@ -168,6 +194,12 @@ const CategoriesPage = () => {
   // Add new category
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isTrialExpired) {
+      toast.error(language === 'ar' ? 'انتهت الفترة التجريبية. لا يمكن إضافة فئات جديدة.' : 'Trial period expired. Cannot add new categories.');
+      return;
+    }
+    
     if (!newCategory.name.en || !newCategory.name.ar || !newCategory.image) {
       showApiErrorToast(null, "Please provide name in both English and Arabic, and an image");
       return;
@@ -196,6 +228,12 @@ const CategoriesPage = () => {
   // Update category
   const handleUpdateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isTrialExpired) {
+      toast.error(language === 'ar' ? 'انتهت الفترة التجريبية. لا يمكن تعديل الفئات.' : 'Trial period expired. Cannot edit categories.');
+      return;
+    }
+    
     if (!editingCategory) return;
 
     const formData = new FormData();
@@ -229,6 +267,11 @@ const CategoriesPage = () => {
 
   // Delete category
   const handleDeleteCategory = async (id: string) => {
+    if (isTrialExpired) {
+      toast.error(language === 'ar' ? 'انتهت الفترة التجريبية. لا يمكن حذف الفئات.' : 'Trial period expired. Cannot delete categories.');
+      return;
+    }
+    
     const confirmed = window.confirm(language === 'ar' ? 'هل أنت متأكد من حذف هذه الفئة؟' : 'Are you sure you want to delete this category?');
     if (confirmed) {
       try {
@@ -240,7 +283,6 @@ const CategoriesPage = () => {
       }
     }
   };
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#eee]">
@@ -271,6 +313,29 @@ const CategoriesPage = () => {
       <AnimatedBackground />
       <div className="max-w-6xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-6">
+          {/* Trial Expired Warning */}
+          {isTrialExpired && (
+            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6" role="alert">
+              <div className="flex items-center">
+                <div className="py-1">
+                  <svg className="h-6 w-6 text-red-500 mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-bold">
+                    {language === 'ar' ? 'انتهت الفترة التجريبية' : 'Trial Period Expired'}
+                  </p>
+                  <p className="text-sm">
+                    {language === 'ar' 
+                      ? 'لا يمكنك إضافة أو تعديل أو حذف الفئات. يرجى الاشتراك للاستمرار في استخدام الخدمة' 
+                      : 'You cannot add, edit, or delete categories. Please subscribe to continue using the service'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Search Bar */}
           <div className="max-w-md mx-auto relative mb-6">
             <input
@@ -296,7 +361,10 @@ const CategoriesPage = () => {
             </div>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="bg-[#222] text-[12px] sm:text-lg text-white px-2 py-2 rounded-lg flex items-center gap-2 hover:bg-[#333] cursor-pointer"
+              disabled={isTrialExpired}
+              className={`bg-[#222] text-[12px] sm:text-lg text-white px-2 py-2 rounded-lg flex items-center gap-2 hover:bg-[#333] cursor-pointer ${
+                isTrialExpired ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
               <PlusIcon />
               {language === 'ar' ? 'إضافة فئة جديدة' : 'Add New Category'}
@@ -348,6 +416,10 @@ const CategoriesPage = () => {
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <button
                               onClick={() => {
+                                if (isTrialExpired) {
+                                  toast.error(language === 'ar' ? 'انتهت الفترة التجريبية. لا يمكن تعديل الفئات.' : 'Trial period expired. Cannot edit categories.');
+                                  return;
+                                }
                                 setEditingCategory(category);
                                 setNewCategory({
                                   name: { 
@@ -362,14 +434,20 @@ const CategoriesPage = () => {
                                   imagePreview: category.image || '/placeholder.svg',
                                 });
                               }}
-                              className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"
+                              disabled={isTrialExpired}
+                              className={`p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer ${
+                                isTrialExpired ? 'opacity-50 cursor-not-allowed' : ''
+                              }`}
                               title={language === 'ar' ? 'تعديل' : 'Edit'}
                             >
                               <EditIcon />
                             </button>
                             <button
                               onClick={() => handleDeleteCategory(category._id)}
-                              className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
+                              disabled={isTrialExpired}
+                              className={`p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors cursor-pointer ${
+                                isTrialExpired ? 'opacity-50 cursor-not-allowed' : ''
+                              }`}
                               title={language === 'ar' ? 'حذف' : 'Delete'}
                             >
                               <TrashIcon />
@@ -523,7 +601,10 @@ const CategoriesPage = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#222] text-white rounded-lg hover:bg-[#333] cursor-pointer"
+                  disabled={isTrialExpired}
+                  className={`px-4 py-2 bg-[#222] text-white rounded-lg hover:bg-[#333] cursor-pointer ${
+                    isTrialExpired ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
                   {editingCategory 
                     ? (language === 'ar' ? 'تحديث' : 'Update')

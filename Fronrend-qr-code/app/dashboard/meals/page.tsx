@@ -69,7 +69,7 @@ const fetcher = async (url: string) => {
 };
 
 const MealsPage = () => {
-  const { token } = useAuth();
+  const { restaurant, token } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState('all');
   const [language, setLanguage] = useState<'en' | 'ar'>('ar');
@@ -79,6 +79,7 @@ const MealsPage = () => {
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [discountData, setDiscountData] = useState({ percentage: 10, startDate: '', endDate: '' });
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [isTrialExpired, setIsTrialExpired] = useState(false);
 
   // SWR for meals and categories
   const { data: meals = [], error: mealsError, isLoading: mealsLoading, mutate: mutateMeals } = useSWR(
@@ -89,6 +90,30 @@ const MealsPage = () => {
     token ? `${process.env.NEXT_PUBLIC_API_URL}/categories` : null, 
     fetcher
   );
+
+  // Check trial expiration
+  useEffect(() => {
+    if (restaurant?.subscription) {
+      const now = new Date();
+      let trialEnd: Date;
+
+      if (typeof restaurant.subscription.trialEndsAt === 'string') {
+        trialEnd = new Date(restaurant.subscription.trialEndsAt);
+      } else {
+        const mongoDate = restaurant.subscription.trialEndsAt as { $date?: { $numberLong: string } };
+        if (mongoDate.$date?.$numberLong) {
+          trialEnd = new Date(parseInt(mongoDate.$date.$numberLong));
+        } else {
+          return;
+        }
+      }
+
+      const diff = trialEnd.getTime() - now.getTime();
+      if (diff <= 0) {
+        setIsTrialExpired(true);
+      }
+    }
+  }, [restaurant]);
 
   useEffect(() => {
     setShowBulkActions(selectedMeals.length > 0);
@@ -105,6 +130,11 @@ const MealsPage = () => {
   }, [mealsError, categoriesError]);
 
   const deleteMeal = async (id: string) => {
+    if (isTrialExpired) {
+      toast.error(language === 'ar' ? 'انتهت الفترة التجريبية. لا يمكن حذف الوجبات.' : 'Trial period expired. Cannot delete meals.');
+      return;
+    }
+    
     if (window.confirm("Are you sure you want to delete this meal?")) {
       try {
         if (!token) {
@@ -124,6 +154,11 @@ const MealsPage = () => {
 
   // Bulk operations functions
   const handleSelectAll = () => {
+    if (isTrialExpired) {
+      toast.error(language === 'ar' ? 'انتهت الفترة التجريبية. لا يمكن تحديد الوجبات.' : 'Trial period expired. Cannot select meals.');
+      return;
+    }
+    
     if (selectAll) {
       setSelectedMeals([]);
       setSelectAll(false);
@@ -134,6 +169,11 @@ const MealsPage = () => {
   };
 
   const handleSelectMeal = (mealId: string) => {
+    if (isTrialExpired) {
+      toast.error(language === 'ar' ? 'انتهت الفترة التجريبية. لا يمكن تحديد الوجبات.' : 'Trial period expired. Cannot select meals.');
+      return;
+    }
+    
     if (selectedMeals.includes(mealId)) {
       setSelectedMeals(selectedMeals.filter(id => id !== mealId));
       setSelectAll(false);
@@ -147,6 +187,11 @@ const MealsPage = () => {
   };
 
   const handleBulkDiscount = async () => {
+    if (isTrialExpired) {
+      toast.error(language === 'ar' ? 'انتهت الفترة التجريبية. لا يمكن تطبيق الخصم.' : 'Trial period expired. Cannot apply discount.');
+      return;
+    }
+    
     if (!discountData.startDate || !discountData.endDate) {
       toast.error(language === 'ar' ? 'يرجى تحديد تاريخ البداية والنهاية' : 'Please select start and end dates');
       return;
@@ -176,6 +221,11 @@ const MealsPage = () => {
   };
 
   const handleBulkDelete = async () => {
+    if (isTrialExpired) {
+      toast.error(language === 'ar' ? 'انتهت الفترة التجريبية. لا يمكن حذف الوجبات.' : 'Trial period expired. Cannot delete meals.');
+      return;
+    }
+    
     if (!window.confirm(language === 'ar' 
       ? `هل أنت متأكد من حذف ${selectedMeals.length} وجبة؟`
       : `Are you sure you want to delete ${selectedMeals.length} meals?`
@@ -233,6 +283,7 @@ const MealsPage = () => {
     );
   }
 
+  
   if (mealsError || categoriesError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#eee]">
@@ -261,6 +312,28 @@ const MealsPage = () => {
     <div className="container mx-auto p-4">
       <AnimatedBackground />
 
+      {/* Trial Expired Warning */}
+      {isTrialExpired && (
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6" role="alert">
+          <div className="flex items-center">
+            <div className="py-1">
+              <svg className="h-6 w-6 text-red-500 mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-bold">
+                {language === 'ar' ? 'انتهت الفترة التجريبية' : 'Trial Period Expired'}
+              </p>
+              <p className="text-sm">
+                {language === 'ar' 
+                  ? 'لا يمكنك إضافة أو تعديل أو حذف الوجبات. يرجى الاشتراك للاستمرار في استخدام الخدمة' 
+                  : 'You cannot add, edit, or delete meals. Please subscribe to continue using the service'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search Bar */}
       <div className="max-w-md mx-auto relative mb-6">
@@ -340,15 +413,19 @@ const MealsPage = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowDiscountModal(true)}
-                disabled={bulkLoading}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                disabled={bulkLoading || isTrialExpired}
+                className={`px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm ${
+                  isTrialExpired ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
                 {language === 'ar' ? 'إضافة خصم' : 'Add Discount'}
               </button>
               <button
                 onClick={handleBulkDelete}
-                disabled={bulkLoading}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                disabled={bulkLoading || isTrialExpired}
+                className={`px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm ${
+                  isTrialExpired ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
                 {language === 'ar' ? 'حذف المحدد' : 'Delete Selected'}
               </button>
@@ -378,12 +455,15 @@ const MealsPage = () => {
           {/* Select All Header */}
           <div className="p-4 border-b border-gray-100 bg-gray-50">
             <div className="flex items-center gap-3">
-              <label className="flex items-center gap-3 cursor-pointer group">
+              <label className={`flex items-center gap-3 cursor-pointer group ${
+                isTrialExpired ? 'opacity-50 cursor-not-allowed' : ''
+              }`}>
                 <div className="relative">
                   <input
                     type="checkbox"
                     checked={selectAll}
                     onChange={handleSelectAll}
+                    disabled={isTrialExpired}
                     className="sr-only"
                   />
                   <div className={`w-5 h-5 border-2 rounded-md transition-all duration-200 flex items-center justify-center ${
@@ -412,12 +492,15 @@ const MealsPage = () => {
                 className={`p-4 hover:bg-gray-50 transition-all duration-200 ease-in-out transform hover:scale-[1.01] hover:shadow-md ${language === 'ar' ? 'flex-row-reverse' : 'flex-row'} flex items-center gap-4 border-b border-gray-100 last:border-b-0`}
               >
                 {/* Checkbox */}
-                <label className="flex items-center cursor-pointer group">
+                <label className={`flex items-center cursor-pointer group ${
+                  isTrialExpired ? 'opacity-50 cursor-not-allowed' : ''
+                }`}>
                   <div className="relative">
                     <input
                       type="checkbox"
                       checked={selectedMeals.includes(meal._id)}
                       onChange={() => handleSelectMeal(meal._id)}
+                      disabled={isTrialExpired}
                       className="sr-only"
                     />
                     <div className={`w-5 h-5 border-2 rounded-md transition-all duration-200 flex items-center justify-center ${
@@ -495,8 +578,16 @@ const MealsPage = () => {
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <Link
                         href={`/dashboard/meals/edit/${meal._id}`}
-                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"
+                        className={`p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer ${
+                          isTrialExpired ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
                         title={language === 'ar' ? 'تعديل' : 'Edit'}
+                        onClick={(e) => {
+                          if (isTrialExpired) {
+                            e.preventDefault();
+                            toast.error(language === 'ar' ? 'انتهت الفترة التجريبية. لا يمكن تعديل الوجبات.' : 'Trial period expired. Cannot edit meals.');
+                          }
+                        }}
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="cursor-pointer">
                           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -505,13 +596,20 @@ const MealsPage = () => {
                       </Link>
                       <button
                         onClick={() => {
+                          if (isTrialExpired) {
+                            toast.error(language === 'ar' ? 'انتهت الفترة التجريبية. لا يمكن حذف الوجبات.' : 'Trial period expired. Cannot delete meals.');
+                            return;
+                          }
                           if (window.confirm(language === 'ar' 
                             ? 'هل أنت متأكد من حذف هذه الوجبة؟' 
                             : 'Are you sure you want to delete this meal?')) {
                             deleteMeal(meal._id);
                           }
                         }}
-                        className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
+                        disabled={isTrialExpired}
+                        className={`p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors cursor-pointer ${
+                          isTrialExpired ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
                         title={language === 'ar' ? 'حذف' : 'Delete'}
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="cursor-pointer">
@@ -541,7 +639,15 @@ const MealsPage = () => {
 
       <Link
         href="/dashboard/meals/add"
-        className="fixed bottom-8 right-8 bg-[#222] text-white p-4 rounded-full shadow-lg hover:bg-[#333] transition-colors"
+        className={`fixed bottom-8 right-8 bg-[#222] text-white p-4 rounded-full shadow-lg hover:bg-[#333] transition-colors ${
+          isTrialExpired ? 'opacity-50 cursor-not-allowed' : ''
+        }`}
+        onClick={(e) => {
+          if (isTrialExpired) {
+            e.preventDefault();
+            toast.error(language === 'ar' ? 'انتهت الفترة التجريبية. لا يمكن إضافة وجبات جديدة.' : 'Trial period expired. Cannot add new meals.');
+          }
+        }}
       >
         {language === 'ar' ? '+ إضافة وجبة جديدة' : '+ Add New Meal'}
       </Link>
@@ -606,8 +712,10 @@ const MealsPage = () => {
               </button>
               <button
                 onClick={handleBulkDiscount}
-                disabled={bulkLoading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                disabled={bulkLoading || isTrialExpired}
+                className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 ${
+                  isTrialExpired ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
                 {bulkLoading 
                   ? (language === 'ar' ? 'جاري التطبيق...' : 'Applying...')
